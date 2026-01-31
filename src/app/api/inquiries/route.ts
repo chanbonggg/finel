@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
 // 1. 문의 목록 조회 (GET)
 // 관리자 페이지에서 문의 리스트를 볼 때 사용합니다.
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
         // 보안: 관리자만 조회 가능
         const authError = requireAdmin(request);
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
 // 2. 문의 등록 (POST)
 // 고객이 '문의하기' 버튼을 눌렀을 때 실행됩니다. (로그인 불필요)
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         // 필드명은 프론트엔드 폼과 Prisma 스키마에 맞춰야 합니다.

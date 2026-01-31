@@ -45,7 +45,7 @@ export default function AdminPage() {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                localStorage.setItem('adminToken', data.token);
+                // localStorage는 더 이상 사용하지 않음. 서버가 httpOnly 쿠키를 설정.
                 setIsLoggedIn(true);
             } else {
                 alert(data.message || "로그인 실패");
@@ -56,10 +56,17 @@ export default function AdminPage() {
     };
 
     // 3. 로그아웃
-    const handleLogout = () => {
-        localStorage.removeItem('adminToken');
-        setIsLoggedIn(false);
-        setPassword("");
+    const handleLogout = async () => {
+        try {
+            // 서버에 쿠키 삭제 요청
+            await fetch('/api/auth/logout');
+        } catch (error) {
+            console.error("Logout failed", error);
+        } finally {
+            // API 요청 성공 여부와 관계없이 프론트엔드 상태를 로그아웃으로 변경
+            setIsLoggedIn(false);
+            setPassword("");
+        }
     };
 
     // --- (1) 로그인 화면 ---

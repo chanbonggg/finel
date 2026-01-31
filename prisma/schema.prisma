@@ -20,7 +20,7 @@ model Admin {
 model Category {
   id        Int       @id @default(autoincrement())
   name      String
-  companyId Int       @default(2) // 기본값 2 (sns), partners.ts의 id 참조
+  companyId Int       
   products  Product[]
 
   @@unique([name, companyId]) // 같은 회사 내에서만 이름 중복 방지

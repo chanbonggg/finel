@@ -6,7 +6,7 @@ export default function Navbar() {
       <div className="container mx-auto flex justify-between items-center">
         {/* 로고 영역 */}
         <Link href="/" className="text-xl font-bold">
-          My Company
+          FINEL
         </Link>
 
         {/* 메뉴 링크 영역 */}

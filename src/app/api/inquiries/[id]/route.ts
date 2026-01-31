@@ -1,17 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
 // DELETE: 특정 ID의 문의 내역 삭제
 export async function DELETE(
-    request: Request,
-    // 1. [변경] params의 타입이 Promise<{ id: string }> 으로 바뀝니다.
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const authError = requireAdmin(request);
         if (authError) return authError;
-        // 2. [변경] params를 사용하기 전에 await로 먼저 기다려줍니다.
+        
         const { id: idString } = await params;
 
         // 문자열을 숫자로 변환

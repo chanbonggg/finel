@@ -1,6 +1,6 @@
 // src/app/api/products/route.ts
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
@@ -38,7 +38,7 @@ export async function GET() {
 }
 
 // POST 함수: 새로운 제품을 데이터베이스에 등록합니다.
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         const authError = requireAdmin(request);
         if (authError) return authError;

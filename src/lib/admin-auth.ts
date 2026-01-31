@@ -1,13 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-export function requireAdmin(request: Request): NextResponse | null {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
+export function requireAdmin(request: NextRequest): NextResponse | null {
+    const tokenCookie = request.cookies.get('auth_token');
+
+    if (!tokenCookie) {
         return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.slice(7).trim();
+    const token = tokenCookie.value;
     const secret = process.env.JWT_SECRET;
     if (!secret) {
         console.error('JWT_SECRET is not set');
@@ -17,7 +18,8 @@ export function requireAdmin(request: Request): NextResponse | null {
     try {
         jwt.verify(token, secret);
         return null;
-    } catch {
+    } catch (err) {
+        console.error('JWT verification error:', err);
         return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 }
