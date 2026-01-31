@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/admin-auth';
 
 // 1. 문의 목록 조회 (GET)
 // 관리자 페이지에서 문의 리스트를 볼 때 사용합니다.
 export async function GET(request: NextRequest) {
     try {
-        // 보안: 관리자만 조회 가능
-        const authError = requireAdmin(request);
-        if (authError) return authError;
-
         const inquiries = await prisma.inquiry.findMany({
             orderBy: { createdAt: 'desc' }, // 최신순 정렬
         });

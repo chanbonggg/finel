@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/admin-auth';
 
 // GET 함수: 제품 목록을 조회할 때 사용합니다.
 export async function GET() {
@@ -40,8 +39,6 @@ export async function GET() {
 // POST 함수: 새로운 제품을 데이터베이스에 등록합니다.
 export async function POST(request: NextRequest) {
     try {
-        const authError = requireAdmin(request);
-        if (authError) return authError;
         // 1. 프론트엔드에서 보낸 데이터(Body)를 받습니다.
         const body = await request.json();
 

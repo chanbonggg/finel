@@ -83,17 +83,24 @@ export default function AdminPage() {
             <div className="flex items-center justify-center min-h-screen bg-gray-100">
                 <form onSubmit={handleLogin} className="bg-white p-10 rounded-xl shadow-lg w-96">
                     <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">관리자 접속</h1>
-
-                    <input
-                        type="text" placeholder="아이디 (ID)" value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full border p-3 rounded mb-4"
-                    />
-                    <input
-                        type="password" placeholder="비밀번호 (Password)" value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full border p-3 rounded mb-4"
-                    />
+                    <div className="mb-4">
+                        <label htmlFor="username-input" className="sr-only">아이디 (ID)</label>
+                        <input
+                            id="username-input"
+                            type="text" placeholder="아이디 (ID)" value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="w-full border p-3 rounded"
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label htmlFor="password-input" className="sr-only">비밀번호 (Password)</label>
+                        <input
+                            id="password-input"
+                            type="password" placeholder="비밀번호 (Password)" value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full border p-3 rounded"
+                        />
+                    </div>
                     <button type="submit" className="w-full bg-gray-900 text-white p-3 rounded font-bold hover:bg-gray-700">
                         로그인
                     </button>

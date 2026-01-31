@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/admin-auth';
 
 // DELETE: 특정 ID의 문의 내역 삭제
 export async function DELETE(
@@ -8,9 +7,6 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const authError = requireAdmin(request);
-        if (authError) return authError;
-        
         const { id: idString } = await params;
 
         // 문자열을 숫자로 변환

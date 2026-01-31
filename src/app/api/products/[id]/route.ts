@@ -2,7 +2,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/admin-auth';
+import { z } from 'zod';
+
+const productUpdateSchema = z.object({
+    name: z.string().min(1, "이름은 필수입니다.").max(100, "이름은 100자 이내로 입력해주세요.").optional(),
+    categoryId: z.number().int().positive("카테고리를 선택해주세요.").optional(),
+    spec: z.string().max(200, "제품 스펙은 200자 이내로 입력해주세요.").optional(),
+    description: z.string().optional(),
+    imageUrl: z.string().url("유효한 URL을 입력해주세요.").optional(),
+    isVisible: z.boolean().optional(),
+}).partial();
+
 
 // GET /api/products/1
 export async function GET(
@@ -50,24 +60,32 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const authError = requireAdmin(request);
-        if (authError) return authError;
-        
         const { id } = await params;
         const productId = parseInt(id);
 
         const body = await request.json();
+        const validatedData = productUpdateSchema.parse(body);
+
+        // Undefined가 아닌 필드만 업데이트 객체에 포함
+        const dataToUpdate: { [key: string]: any } = {};
+        Object.keys(validatedData).forEach(key => {
+            const value = (validatedData as any)[key];
+            if (value !== undefined) {
+                dataToUpdate[key] = value;
+            }
+        });
+
+        if (Object.keys(dataToUpdate).length === 0) {
+            return NextResponse.json(
+                { success: false, message: '수정할 내용이 없습니다.' },
+                { status: 400 }
+            );
+        }
+
 
         const updatedProduct = await prisma.product.update({
             where: { id: productId },
-            data: {
-                name: body.name,
-                categoryId: body.categoryId ? Number(body.categoryId) : undefined,
-                spec: body.spec,
-                description: body.description,
-                imageUrl: body.imageUrl,
-                isVisible: body.isVisible,
-            },
+            data: dataToUpdate,
         });
 
         return NextResponse.json({
@@ -77,6 +95,9 @@ export async function PATCH(
         });
 
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ success: false, error: error.errors }, { status: 400 });
+        }
         console.error('수정 에러:', error);
         return NextResponse.json(
             { success: false, message: '제품 수정 실패 (존재하지 않는 ID일 수 있습니다)' },
@@ -91,9 +112,6 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const authError = requireAdmin(request);
-        if (authError) return authError;
-        
         const { id } = await params;
         const productId = parseInt(id);
 

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/admin-auth';
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
+
+// Zod 스키마 정의
+const categorySchema = z.object({
+  name: z.string().min(1, "이름은 필수입니다.").max(50, "이름은 50자 이하여야 합니다."),
+  companyId: z.number().int().positive("유효한 기업 ID가 필요합니다."),
+});
 
 export async function GET(request: NextRequest) {
     try {
@@ -25,32 +31,26 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const authError = requireAdmin(request);
-        if (authError) return authError;
+        const body = await request.json();
+        const { name, companyId } = categorySchema.parse(body);
 
-        const { name, companyId } = await request.json();
-
-        if (!companyId) {
-            return NextResponse.json({ success: false, message: '기업을 선택해야 합니다.' }, { status: 400 });
-        }
-
-        const existing = await prisma.category.findFirst({ where: { name, companyId: Number(companyId) } });
+        const existing = await prisma.category.findFirst({ where: { name, companyId } });
         if (existing) {
             return NextResponse.json({ success: false, message: '해당 기업에 이미 존재하는 카테고리입니다.' }, { status: 400 });
         }
 
-        const newCategory = await prisma.category.create({ data: { name, companyId: Number(companyId) } });
+        const newCategory = await prisma.category.create({ data: { name, companyId } });
         return NextResponse.json({ success: true, category: newCategory });
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ success: false, error: error.errors }, { status: 400 });
+        }
         return NextResponse.json({ success: false, error: '카테고리 추가 실패' }, { status: 500 });
     }
 }
 
 export async function DELETE(request: NextRequest) {
     try {
-        const authError = requireAdmin(request);
-        if (authError) return authError;
-
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
         if (!id) {
