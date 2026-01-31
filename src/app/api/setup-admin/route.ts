@@ -11,8 +11,12 @@ export async function GET() {
             return NextResponse.json({ message: '이미 관리자 계정이 존재합니다.' });
         }
 
-        // 2. 비밀번호 암호화 (1234 -> $2b$10$...)
-        const hashedPassword = await bcrypt.hash('rlacksdud1!', 10);
+        // 2. 비밀번호 암호화 (배포 시 보안을 위해 환경변수 강제)
+        const password = process.env.ADMIN_PASSWORD;
+        if (!password) {
+            return NextResponse.json({ error: '환경변수 ADMIN_PASSWORD가 설정되지 않았습니다.' }, { status: 500 });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         // 3. DB에 저장
         await prisma.admin.create({
@@ -24,7 +28,7 @@ export async function GET() {
 
         return NextResponse.json({
             success: true,
-            message: '관리자 계정(admin / 1234)이 성공적으로 생성되었습니다!'
+            message: '관리자 계정(admin)이 성공적으로 생성되었습니다!'
         });
 
     } catch (error) {

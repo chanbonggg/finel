@@ -1,27 +1,32 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-// .env 파일에서 비밀번호와 암호화 키를 가져옵니다.
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
+        const { username, password } = body;
 
-        // ✅ [변경] username은 받지 않고, password만 꺼냅니다.
-        const { password } = body;
-
-        // 1. 비밀번호 검사
-        // 사용자가 입력한 비번이 .env에 적어둔 비번과 다르면 에러!
-        if (password !== ADMIN_PASSWORD) {
+        if (!username || !password) {
             return NextResponse.json(
-                { success: false, message: '비밀번호가 일치하지 않습니다.' },
-                { status: 401 }
+                { success: false, message: '아이디와 비밀번호를 입력해주세요.' },
+                { status: 400 }
             );
         }
 
-        // 2. JWT 비밀키 확인
+        // 1. DB에서 관리자 찾기
+        const admin = await prisma.admin.findUnique({ where: { username } });
+        
+        // 2. 계정 존재 여부 및 비밀번호 비교 (보안을 위해 메시지 통일)
+        const isMatch = admin && (await bcrypt.compare(password, admin.password));
+        if (!admin || !isMatch) {
+            return NextResponse.json({ success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다.' }, { status: 401 });
+        }
+
+        // 3. JWT 비밀키 확인
         if (!JWT_SECRET) {
             console.error('JWT_SECRET이 설정되지 않았습니다.');
             return NextResponse.json(
@@ -30,20 +35,30 @@ export async function POST(request: Request) {
             );
         }
 
-        // 3. 토큰 발급 (내용물은 role: 'admin' 정도만 넣으면 됩니다)
+        // 4. 토큰 발급
         const token = jwt.sign(
-            { role: 'admin' },
+            { id: admin.id, username: admin.username },
             JWT_SECRET,
             { expiresIn: '12h' } // 12시간 유효
         );
 
-        // 4. 성공 응답 (토큰을 프론트엔드에 전달)
-        // 프론트엔드에서 이 토큰을 받아서 localStorage에 저장합니다.
-        return NextResponse.json({
+        // 5. 쿠키 설정 및 응답 (보안 강화 + 미들웨어 연동)
+        const response = NextResponse.json({
             success: true,
             message: '로그인 성공',
-            token,
+            token, // 프론트엔드 호환성을 위해 남겨둠
         });
+
+        // httpOnly 쿠키에 토큰 저장 (자바스크립트로 접근 불가 -> 보안 강화)
+        response.cookies.set('auth_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 60 * 60 * 12, // 12시간
+            path: '/',
+        });
+
+        return response;
 
     } catch (error) {
         console.error('로그인 서버 에러:', error);

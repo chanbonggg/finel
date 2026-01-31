@@ -7,6 +7,7 @@ import ProductTab from '@/app/admin/ProductTap'; // 분리한 컴포넌트 가�
 export default function AdminPage() {
     // --- 상태 관리 ---
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [activeTab, setActiveTab] = useState("inquiry");
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -44,7 +45,7 @@ export default function AdminPage() {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password }),
+                body: JSON.stringify({ username, password }),
             });
             const data = await res.json();
 
@@ -81,6 +82,11 @@ export default function AdminPage() {
                 <form onSubmit={handleLogin} className="bg-white p-10 rounded-xl shadow-lg w-96">
                     <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">관리자 접속</h1>
 
+                    <input
+                        type="text" placeholder="아이디 (ID)" value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full border p-3 rounded mb-4"
+                    />
                     <input
                         type="password" placeholder="비밀번호 (Password)" value={password}
                         onChange={(e) => setPassword(e.target.value)}
