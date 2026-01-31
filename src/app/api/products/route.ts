@@ -21,7 +21,8 @@ export async function GET() {
 
         const formattedProducts = products.map(p => ({
             ...p,
-            category: p.category.name // product.category.name 을 그냥 product.category 로 변환
+            category: p.category.name, // product.category.name 을 그냥 product.category 로 변환
+            companyId: p.category.companyId // 회사 ID 추가
         }));
 
         return NextResponse.json({ success: true, products: formattedProducts });
@@ -76,7 +77,8 @@ export async function POST(request: Request) {
         // 데이터 포맷팅
         const formattedProduct = {
             ...productWithCategory,
-            category: productWithCategory?.category.name // 이름을 꺼내줌
+            category: productWithCategory?.category.name, // 이름을 꺼내줌
+            companyId: productWithCategory?.category.companyId // 회사 ID 추가
         };
 
         // 4. 성공 응답 (등록된 제품 정보를 돌려줍니다)

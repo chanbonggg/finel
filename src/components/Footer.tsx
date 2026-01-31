@@ -10,7 +10,7 @@ export default function Footer() {
                     {/* 문의 폼이 있으므로 개인정보처리방침은 있는 게 좋습니다 */}
                     <Link href="/privacy" className="hover:text-black">개인정보처리방침</Link>
                     <span className="text-gray-300">|</span>
-                    <Link href="/contact" className="hover:text-black">오시는 길</Link>
+                    <Link href="/about" className="hover:text-black">오시는 길</Link>
 
 
                 </div>

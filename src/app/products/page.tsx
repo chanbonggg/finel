@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react'; // React 기능 가져오기
 import Link from "next/link";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { PARTNERS } from '@/constants/partners';
 
 // 제품 데이터 타입 정의 (DB랑 맞춰줍니다)
 interface Product {
     id: number;
     name: string;
     category: string;
+    companyId: number; // API에서 추가된 필드
     spec: string;
     description: string;
     imageUrl?: string; // 이미지는 없을 수도 있음
@@ -17,14 +19,17 @@ interface Product {
 interface Category {
     id: number | string;
     name: string;
+    companyId?: number;
 }
 
 export default function ProductsPage() {
     // 2. [변경된 부분] 가짜 데이터 대신 '빈 통(State)'을 만듭니다.
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCompanyId, setSelectedCompanyId] = useState<number | 'all'>('all');
     const [loading, setLoading] = useState(true);
     const searchParams = useSearchParams();
+    const router = useRouter();
     const selectedCategory = searchParams.get('category') || 'all';
 
     // 3. [변경된 부분] 페이지가 열리면 서버에서 데이터를 가져옵니다.
@@ -54,20 +59,39 @@ export default function ProductsPage() {
         fetchProductsAndCategories();
     }, []);
 
+    // 회사 선택 핸들러
+    const handleCompanyClick = (id: number | 'all') => {
+        setSelectedCompanyId(id);
+        // 회사가 바뀌면 카테고리 선택을 초기화 ('All'로)
+        router.replace('/products');
+    };
+
     const categoryOptions = useMemo(() => {
-        if (categories.length > 0) {
-            return categories;
+        // 선택된 회사의 카테고리만 필터링
+        let filteredCats = categories;
+        if (selectedCompanyId !== 'all') {
+            filteredCats = categories.filter(c => c.companyId === selectedCompanyId);
         }
-        const uniqueNames = Array.from(new Set(products.map((product) => product.category)));
+
+        if (filteredCats.length > 0) {
+            return filteredCats;
+        }
+        // 카테고리 데이터가 아직 없거나 매칭이 안되면 제품 목록에서 추출 (fallback)
+        const targetProducts = selectedCompanyId === 'all' ? products : products.filter(p => p.companyId === selectedCompanyId);
+        const uniqueNames = Array.from(new Set(targetProducts.map((product) => product.category)));
         return uniqueNames.map((name) => ({ id: name, name }));
-    }, [categories, products]);
+    }, [categories, products, selectedCompanyId]);
 
     const filteredProducts = useMemo(() => {
-        if (selectedCategory === 'all') {
-            return products;
+        // 1. 회사 필터링
+        let result = selectedCompanyId === 'all' ? products : products.filter(p => p.companyId === selectedCompanyId);
+        
+        // 2. 카테고리 필터링
+        if (selectedCategory !== 'all') {
+            result = result.filter((product) => product.category === selectedCategory);
         }
-        return products.filter((product) => product.category === selectedCategory);
-    }, [products, selectedCategory]);
+        return result;
+    }, [products, selectedCompanyId, selectedCategory]);
 
     const categoryLinkClass = (categoryName: string) =>
         selectedCategory === categoryName
@@ -89,6 +113,38 @@ export default function ProductsPage() {
                     고객의 비즈니스 환경에 최적화된 다양한 솔루션을 만나보세요.<br />
                     세부 스펙 변경 및 커스텀 제작은 별도 문의 부탁드립니다.
                 </p>
+            </section>
+
+            {/* 회사 선택 (아이콘) */}
+            <section className="flex flex-wrap justify-center gap-4 mb-10 px-4">
+                <button
+                    onClick={() => handleCompanyClick('all')}
+                    className={`h-16 px-6 rounded-xl border-2 transition flex items-center justify-center font-bold text-lg ${
+                        selectedCompanyId === 'all'
+                            ? 'border-gray-900 bg-gray-900 text-white shadow-md'
+                            : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400 hover:bg-gray-50'
+                    }`}
+                >
+                    ALL
+                </button>
+                {PARTNERS.map((partner) => (
+                    <button
+                        key={partner.id}
+                        onClick={() => handleCompanyClick(partner.id)}
+                        className={`h-16 w-32 p-2 rounded-xl border-2 transition flex items-center justify-center bg-white ${
+                            selectedCompanyId === partner.id
+                                ? 'border-blue-600 ring-2 ring-blue-100 shadow-md'
+                                : 'border-gray-200 hover:border-blue-400 hover:shadow-sm'
+                        }`}
+                        title={partner.name}
+                    >
+                        <img
+                            src={partner.logo}
+                            alt={partner.name}
+                            className="max-w-full max-h-full object-contain"
+                        />
+                    </button>
+                ))}
             </section>
 
             {/* Category navigation */}

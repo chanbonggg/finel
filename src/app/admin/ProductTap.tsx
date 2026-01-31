@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, ChangeEvent, useRef } from 'react';
+import { PARTNERS } from '@/constants/partners';
 
 // ✅ [환경 변수]
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -11,6 +12,7 @@ interface Product {
     id: number;
     name: string;
     category: string;
+    categoryId: number;
     spec: string;
     description: string;
     imageUrl?: string;
@@ -21,6 +23,7 @@ interface Product {
 interface Category {
     id: number;
     name: string;
+    companyId: number;
 }
 
 export default function ProductTab() {
@@ -29,6 +32,8 @@ export default function ProductTab() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    // 선택된 회사 ID
+    const [selectedCompanyId, setSelectedCompanyId] = useState<number | "">("");
 
     const [newProduct, setNewProduct] = useState({
         name: '',
@@ -52,27 +57,39 @@ export default function ProductTab() {
 
     // --- 초기 데이터 로딩 ---
     useEffect(() => {
-        fetchData();
+        fetchProducts();
     }, []);
 
-    const fetchData = async () => {
+    // 회사가 선택되면 해당 회사의 카테고리만 불러옴
+    useEffect(() => {
+        if (selectedCompanyId) {
+            fetchCategories(Number(selectedCompanyId));
+            setNewProduct(prev => ({ ...prev, categoryId: '' })); // 회사 변경 시 카테고리 초기화
+        } else {
+            setCategories([]);
+        }
+    }, [selectedCompanyId]);
+
+    const fetchProducts = async () => {
         setIsLoading(true);
         try {
-            const authHeaders = getAuthHeaders();
-            const [pRes, cRes] = await Promise.all([
-                fetch('/api/products', { headers: authHeaders }),
-                fetch('/api/categories', { headers: authHeaders })
-            ]);
-
-            const pData = await pRes.json();
-            const cData = await cRes.json();
-
-            if (pData.success) setProducts(pData.products);
-            if (cData.success) setCategories(cData.categories);
+            const res = await fetch('/api/products', { headers: getAuthHeaders() });
+            const data = await res.json();
+            if (data.success) setProducts(data.products);
         } catch (error) {
-            console.error("데이터 로딩 실패:", error);
+            console.error("제품 로딩 실패:", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchCategories = async (companyId: number) => {
+        try {
+            const res = await fetch(`/api/categories?companyId=${companyId}`, { headers: getAuthHeaders() });
+            const data = await res.json();
+            if (data.success) setCategories(data.categories);
+        } catch (error) {
+            console.error("카테고리 로딩 실패:", error);
         }
     };
 
@@ -111,6 +128,7 @@ export default function ProductTab() {
     // --- 카테고리 추가 ---
     const handleAddCategory = async () => {
         if (!newCategoryName.trim()) return;
+        if (!selectedCompanyId) return alert("회사를 먼저 선택해주세요.");
         const token = localStorage.getItem('adminToken');
         try {
             const res = await fetch('/api/categories', {
@@ -120,7 +138,7 @@ export default function ProductTab() {
                     'Authorization': `Bearer ${token}`,
                     ...getAuthHeaders()
                 },
-                body: JSON.stringify({ name: newCategoryName })
+                body: JSON.stringify({ name: newCategoryName, companyId: selectedCompanyId })
             });
             const data = await res.json();
             if (data.success) {
@@ -173,7 +191,7 @@ export default function ProductTab() {
 
             if (data.success) {
                 alert("제품 등록 완료!");
-                setProducts([data.product, ...products]);
+                fetchProducts(); // 목록 새로고침
                 setNewProduct({ name: '', categoryId: '', spec: '', description: '', imageUrl: '' });
                 if (fileInputRef.current) fileInputRef.current.value = "";
             } else {
@@ -206,7 +224,7 @@ export default function ProductTab() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-gray-800">제품 관리</h2>
-                <button onClick={fetchData} className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1 rounded transition">
+                <button onClick={fetchProducts} className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1 rounded transition">
                     목록 새로고침
                 </button>
             </div>
@@ -217,7 +235,28 @@ export default function ProductTab() {
                     새 제품 등록하기
                 </h3>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* 1. 회사 선택 (가장 먼저 해야 함) */}
+                <div className="mb-6">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">회사(Partner) 선택 <span className="text-red-500">*</span></label>
+                    <div className="flex gap-4 flex-wrap">
+                        {PARTNERS.map(partner => (
+                            <button
+                                key={partner.id}
+                                onClick={() => setSelectedCompanyId(partner.id)}
+                                className={`px-4 py-2 rounded-lg border transition flex items-center gap-2 ${
+                                    selectedCompanyId === partner.id 
+                                    ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200' 
+                                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                                }`}
+                            >
+                                <span className="font-bold uppercase">{partner.name}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {selectedCompanyId && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
 
                     {/* 왼쪽: 이미지 업로드 구역 (디자인 대폭 변경) */}
                     <div className="lg:col-span-1">
@@ -369,6 +408,7 @@ export default function ProductTab() {
                         </button>
                     </div>
                 </div>
+                )}
             </div>
 
             {/* --- 리스트 테이블 --- */}

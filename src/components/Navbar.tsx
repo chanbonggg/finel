@@ -12,7 +12,7 @@ export default function Navbar() {
         {/* 메뉴 링크 영역 */}
         <ul className="flex space-x-6">
           <li>
-            <Link href="/company" className="hover:text-gray-300">회사소개</Link>
+            <Link href="/about" className="hover:text-gray-300">회사소개</Link>
           </li>
           <li>
             <Link href="/products" className="hover:text-gray-300">제품소개</Link>

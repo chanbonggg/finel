@@ -18,9 +18,12 @@ model Admin {
 }
 
 model Category {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique // 카테고리 이름 (중복 방지)
-  products Product[] // 이 카테고리에 속한 제품들 (자동 연결)
+  id        Int       @id @default(autoincrement())
+  name      String
+  companyId Int       @default(2) // 기본값 2 (sns), partners.ts의 id 참조
+  products  Product[]
+
+  @@unique([name, companyId]) // 같은 회사 내에서만 이름 중복 방지
 }
 
 // 2. 제품 (Products)
