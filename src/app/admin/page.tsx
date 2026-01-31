@@ -20,7 +20,6 @@ export default function AdminPage() {
                 const res = await fetch('/api/auth/verify');
                 if (res.ok) {
                     setIsLoggedIn(true);
-                    fetchAllData(); // 로그인 확인되면 데이터 로딩
                 } else {
                     setIsLoggedIn(false);
                 }
