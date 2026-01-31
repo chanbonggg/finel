@@ -46,7 +46,6 @@ export async function POST(request: Request) {
         const response = NextResponse.json({
             success: true,
             message: '로그인 성공',
-            token, // 프론트엔드 호환성을 위해 남겨둠
         });
 
         // httpOnly 쿠키에 토큰 저장 (자바스크립트로 접근 불가 -> 보안 강화)

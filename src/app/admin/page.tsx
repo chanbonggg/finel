@@ -15,19 +15,15 @@ export default function AdminPage() {
     // 1. 초기 로그인 체크
     useEffect(() => {
         const checkAuth = async () => {
-            const token = localStorage.getItem('adminToken');
-            if (!token) {
-                setIsLoggedIn(false);
-                setIsCheckingAuth(false);
-                return;
-            }
-
             try {
-                const res = await fetch('/api/auth/verify', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                setIsLoggedIn(res.ok);
-                if (!res.ok) localStorage.removeItem('adminToken');
+                // 쿠키는 브라우저가 자동으로 전송하므로 별도 헤더 설정 불필요
+                const res = await fetch('/api/auth/verify');
+                if (res.ok) {
+                    setIsLoggedIn(true);
+                    fetchAllData(); // 로그인 확인되면 데이터 로딩
+                } else {
+                    setIsLoggedIn(false);
+                }
             } catch {
                 setIsLoggedIn(false);
             } finally {
