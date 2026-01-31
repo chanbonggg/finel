@@ -1,0 +1,53 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. 관리자 (Admins)
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique // 카테고리 이름 (중복 방지)
+  products Product[] // 이 카테고리에 속한 제품들 (자동 연결)
+}
+
+// 2. 제품 (Products)
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+ 
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  
+  spec        String
+  description String   @db.Text
+  imageUrl    String
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 3. 문의 (Inquiries)
+model Inquiry {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone   String?
+  email     String
+  content   String   @db.Text // 문의 내용 
+  company   String?  // 회사가 없을 수도 있으니 옵션(?) 처리
+  product   String?  // 제품도 선택 안 할 수 있으면 옵션(?) 처리
+  isRead    Boolean  @default(false) // 읽음 여부 
+  createdAt DateTime @default(now())
+}
