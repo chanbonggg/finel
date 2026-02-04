@@ -96,7 +96,8 @@ export async function PATCH(
 
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ success: false, error: error.errors }, { status: 400 });
+            const errorMessage = error.issues.map(issue => issue.message).join(', ');
+            return NextResponse.json({ success: false, message: errorMessage }, { status: 400 });
         }
         console.error('수정 에러:', error);
         return NextResponse.json(

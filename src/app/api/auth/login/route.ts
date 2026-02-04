@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -36,11 +36,13 @@ export async function POST(request: Request) {
         }
 
         // 4. 토큰 발급
-        const token = jwt.sign(
-            { id: admin.id, username: admin.username },
-            JWT_SECRET,
-            { expiresIn: '12h' } // 12시간 유효
-        );
+        const secretKey = new TextEncoder().encode(JWT_SECRET);
+        const token = await new SignJWT({ id: admin.id, username: admin.username })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime('12h')
+            .sign(secretKey);
+
 
         // 5. 쿠키 설정 및 응답 (보안 강화 + 미들웨어 연동)
         const response = NextResponse.json({

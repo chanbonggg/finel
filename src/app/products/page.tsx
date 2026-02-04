@@ -14,6 +14,7 @@ interface Product {
     spec: string;
     description: string;
     imageUrl?: string; // 이미지는 없을 수도 있음
+    isVisible?: boolean; // 공개 여부
 }
 
 interface Category {
@@ -27,6 +28,7 @@ export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<number | 'all'>('all');
+    const [visibleCount, setVisibleCount] = useState(4);
     const [loading, setLoading] = useState(true);
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -64,6 +66,7 @@ export default function ProductsPage() {
         setSelectedCompanyId(id);
         // 회사가 바뀌면 카테고리 선택을 초기화 ('All'로)
         router.replace('/products');
+        setVisibleCount(4);
     };
 
     const categoryOptions = useMemo(() => {
@@ -84,14 +87,24 @@ export default function ProductsPage() {
 
     const filteredProducts = useMemo(() => {
         // 1. 회사 필터링
-        let result = selectedCompanyId === 'all' ? products : products.filter(p => p.companyId === selectedCompanyId);
+        let result = products.filter(p => p.isVisible);
+
+        if (selectedCompanyId !== 'all') {
+            result = result.filter(p => p.companyId === selectedCompanyId);
+        }
         
         // 2. 카테고리 필터링
         if (selectedCategory !== 'all') {
             result = result.filter((product) => product.category === selectedCategory);
         }
+
+        // 3. 최신순 정렬
+        result = result.sort((a, b) => b.id - a.id);
+
         return result;
     }, [products, selectedCompanyId, selectedCategory]);
+
+    const displayedProducts = filteredProducts.slice(0, visibleCount);
 
     const categoryLinkClass = (categoryName: string) =>
         selectedCategory === categoryName
@@ -117,16 +130,6 @@ export default function ProductsPage() {
 
             {/* 회사 선택 (아이콘) */}
             <section className="flex flex-wrap justify-center gap-4 mb-10 px-4">
-                <button
-                    onClick={() => handleCompanyClick('all')}
-                    className={`h-16 px-6 rounded-xl border-2 transition flex items-center justify-center font-bold text-lg ${
-                        selectedCompanyId === 'all'
-                            ? 'border-gray-900 bg-gray-900 text-white shadow-md'
-                            : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                >
-                    ALL
-                </button>
                 {PARTNERS.map((partner) => (
                     <button
                         key={partner.id}
@@ -148,31 +151,33 @@ export default function ProductsPage() {
             </section>
 
             {/* Category navigation */}
-            <section className="flex flex-wrap justify-center gap-3 px-4 mb-12">
-                <Link href="/products" className={categoryLinkClass('all')}>
-                    All
-                </Link>
-                {categoryOptions.map((category) => (
-                    <Link
-                        key={category.id}
-                        href={`/products?category=${encodeURIComponent(category.name)}`}
-                        className={categoryLinkClass(category.name)}
-                    >
-                        {category.name}
+            {selectedCompanyId !== 'all' && (
+                <section className="flex flex-wrap justify-center gap-3 px-4 mb-12">
+                    <Link href="/products" className={categoryLinkClass('all')}>
+                        All
                     </Link>
-                ))}
-            </section>
+                    {categoryOptions.map((category) => (
+                        <Link
+                            key={category.id}
+                            href={`/products?category=${encodeURIComponent(category.name)}`}
+                            className={categoryLinkClass(category.name)}
+                        >
+                            {category.name}
+                        </Link>
+                    ))}
+                </section>
+            )}
 
             {/* 제품 리스트 그리드 */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
                 {/* 제품이 하나도 없을 때 안내 메시지 */}
-                {filteredProducts.length === 0 && (
+                {displayedProducts.length === 0 && (
                     <div className="col-span-full text-center py-10 bg-gray-50 rounded-xl">
                         등록된 제품이 아직 없습니다. 관리자 페이지에서 추가해주세요.
                     </div>
                 )}
 
-                {filteredProducts.map((product) => (
+                {displayedProducts.map((product) => (
                     <Link
                         key={product.id}
                         href={`/products/${product.id}`}
@@ -214,6 +219,17 @@ export default function ProductsPage() {
                 ))}
             </section>
 
+            {/* 더 보기 버튼 */}
+            {visibleCount < filteredProducts.length && (
+                <div className="flex justify-center mt-12">
+                    <button
+                        onClick={() => setVisibleCount((prev) => prev + 4)}
+                        className="px-8 py-3 bg-white border border-gray-300 rounded-full font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition shadow-sm"
+                    >
+                        더 보기 +
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

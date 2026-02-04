@@ -7,19 +7,10 @@ export function useInquiry() {
     const [inquiries, setInquiries] = useState<Inquiry[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const getAuthHeaders = (): HeadersInit => {
-        const token = localStorage.getItem('adminToken');
-        const headers = new Headers();
-        if (token) headers.set('Authorization', `Bearer ${token}`);
-        return headers;
-    };
-
     const fetchInquiries = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/inquiries', {
-                headers: getAuthHeaders(),
-            });
+            const res = await fetch('/api/inquiries');
             const data = await res.json();
             if (data.success) {
                 setInquiries(data.inquiries);
@@ -41,7 +32,6 @@ export function useInquiry() {
         try {
             const res = await fetch(`/api/inquiries/${id}`, {
                 method: 'DELETE',
-                headers: getAuthHeaders(),
             });
             const data = await res.json();
             if (res.ok && data.success) {

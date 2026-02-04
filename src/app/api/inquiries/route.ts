@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import nodemailer from 'nodemailer';
 
 // 1. 문의 목록 조회 (GET)
 // 관리자 페이지에서 문의 리스트를 볼 때 사용합니다.
@@ -61,6 +62,37 @@ export async function POST(request: NextRequest) {
                 company: company || '',  // 회사명 (선택)
             },
         });
+
+        // 2. 이메일 전송 설정 (Nodemailer)
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+
+        // 3. 메일 내용 구성
+        const mailOptions = {
+            from: process.env.EMAIL_USER, // 보내는 사람
+            to: process.env.EMAIL_USER,   // 받는 사람 (관리자 이메일)
+            subject: `[홈페이지 문의] ${name}님의 새로운 문의입니다.`,
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #2563eb;">새로운 문의가 도착했습니다.</h2>
+                    <p><strong>이름:</strong> ${name}</p>
+                    <p><strong>연락처:</strong> ${phoneNumber}</p>
+                    <p><strong>이메일:</strong> ${email || '없음'}</p>
+                    <p><strong>회사명:</strong> ${company || '없음'}</p>
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;" />
+                    <h3 style="color: #333;">문의 내용</h3>
+                    <p style="white-space: pre-wrap; color: #555;">${message}</p>
+                </div>
+            `,
+        };
+
+        // 4. 메일 발송
+        await transporter.sendMail(mailOptions);
 
         return NextResponse.json({ success: true, message: '문의가 성공적으로 접수되었습니다.', inquiry: newInquiry });
 

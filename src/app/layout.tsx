@@ -15,8 +15,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "finel", // 2. 사이트 제목 변경
-  description: "고객 문의 및 제품 소개 웹사이트",
+  title: {
+    default: "Finel", // 기본 사이트 제목
+    template: "%s | Finel", // 각 페이지 제목 형식 (예: "제품 소개 | Finel")
+  },
+  description: "Finel은 고객의 비즈니스 성장을 돕는 최고의 파트너입니다.",
+  openGraph: {
+    title: "Finel - 혁신적인 솔루션",
+    description: "Finel과 함께 비즈니스의 미래를 만들어가세요.",
+    // TODO: 웹사이트를 대표하는 이미지 주소를 넣어주세요. (예: https://www.finel.com/og-image.png)
+    images: ["/og-image.png"], 
+    locale: "ko_KR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

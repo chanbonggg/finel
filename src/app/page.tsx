@@ -50,16 +50,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 2. [FR-01] 신뢰도 섹션 (인증서/파트너) */}
-      <section className="container mx-auto px-4 text-center">
-        <p className="text-sm text-gray-500 font-bold mb-6 uppercase tracking-widest">Trusted Partners & Certificates</p>
-        <div className="flex flex-wrap justify-center gap-8 opacity-60 grayscale hover:grayscale-0 transition duration-500">
-          <div className="border-2 border-gray-300 px-6 py-2 rounded font-bold text-gray-500">ISO 9001 인증</div>
-          <div className="border-2 border-gray-300 px-6 py-2 rounded font-bold text-gray-500">KC 안전인증</div>
-          <div className="border-2 border-gray-300 px-6 py-2 rounded font-bold text-gray-500">특허 보유기업</div>
-          <div className="border-2 border-gray-300 px-6 py-2 rounded font-bold text-gray-500">Global Partner</div>
-        </div>
-      </section>
 
       {/* 3. [FR-02] 주력 제품 소개 (DB 연동 완료) */}
       <section className="container mx-auto px-4">

@@ -1,8 +1,8 @@
-// src/middleware.ts
+// src/proxy.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireAdmin, isAdminPayload } from '@/lib/admin-auth';
 
-export function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // `/api/inquiries` 경로는 모든 HTTP 메소드에 대해 관리자 인증을 요구합니다.
@@ -10,11 +10,11 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/inquiries')) {
     // 공개적인 문의 등록(POST)은 인증을 건너뜁니다.
     if (request.method === 'POST' && pathname === '/api/inquiries') {
-        return NextResponse.next();
+      return NextResponse.next();
     }
 
-    const authResult = requireAdmin(request);
-    if (authResult) {
+    const authResult = await requireAdmin(request);
+    if (!isAdminPayload(authResult)) {
       return authResult;
     }
     return NextResponse.next();
@@ -27,8 +27,8 @@ export function middleware(request: NextRequest) {
     }
     
     // GET이 아닌 다른 메소드는 인증 필요
-    const authResult = requireAdmin(request);
-    if (authResult) {
+    const authResult = await requireAdmin(request);
+    if (!isAdminPayload(authResult)) {
       return authResult;
     }
     return NextResponse.next();
