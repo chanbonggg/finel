@@ -11,6 +11,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',     // 사이트 전체를 기본적으로 허용
       disallow: ['/admin/', '/api/'], // 관리자 페이지와 API 경로는 수집 제외
     },
-    sitemap: 'https://www.your-finel-site.com/sitemap.xml', // 사이트맵 주소
+    sitemap: 'https://www.finel.co.kr/sitemap.xml', // 사이트맵 주소
   };
 }

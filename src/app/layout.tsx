@@ -20,7 +20,13 @@ const geistMono = Geist_Mono({
  */
 export const metadata: Metadata = {
   // robots.txt, sitemap.xml 등에서 사용할 기본 URL을 설정합니다.
-  metadataBase: new URL("https://www.your-finel-site.com"),
+  metadataBase: new URL("https://www.finel.co.kr"),
+  alternates: {
+    canonical: "/",
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
   title: {
     default: "finel - 산업용 공압 부품 전문몰", // 기본 제목
     template: "%s | finel", // 페이지별 제목 템플릿
@@ -31,7 +37,7 @@ export const metadata: Metadata = {
     title: "finel: 산업 자동화를 위한 최적의 공압 솔루션", // OG용 제목
     description:
       "고품질 공압 부품, 합리적인 가격, 그리고 전문가의 기술 지원까지. finel에서 비즈니스의 성공을 앞당기세요.", // OG용 설명
-    url: "https://www.your-finel-site.com",
+    url: "https://www.finel.co.kr",
     siteName: "finel",
     // TODO: 웹사이트를 대표하는 이미지 주소를 넣어주세요. (예: https://www.finel.com/og-image.png)
     images: ["/og-image.png"], // /public/og-image.png

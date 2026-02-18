@@ -1,110 +1,92 @@
-'use client';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
 
-interface ProductDetail {
-    id: number;
-    name: string;
-    spec: string;
-    description: string;
-    imageUrl?: string;
+async function getProduct(id: string) {
+  const productId = Number(id);
+
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return null;
+  }
+
+  return prisma.product.findUnique({
+    where: { id: productId },
+    select: {
+      id: true,
+      name: true,
+      spec: true,
+      description: true,
+      imageUrl: true,
+      isVisible: true,
+    },
+  });
 }
 
-export default function ProductDetailPage() {
-    const params = useParams();
-    const productId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-    const [product, setProduct] = useState<ProductDetail | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const product = await getProduct(id);
 
-    useEffect(() => {
-        if (!productId) {
-            setLoading(false);
-            setError('제품 정보를 찾을 수 없습니다.');
-            return;
-        }
+  if (!product || !product.isVisible) {
+    return {
+      title: "제품을 찾을 수 없습니다",
+      description: "요청하신 제품 정보를 찾을 수 없습니다.",
+    };
+  }
 
-        async function fetchProduct() {
-            try {
-                const res = await fetch(`/api/products/${productId}`);
-                const data = await res.json();
+  const description = product.description.slice(0, 160);
+  const pageUrl = `/products/${product.id}`;
 
-                if (!data.success) {
-                    setError(data.message || '제품 정보를 불러오지 못했습니다.');
-                    return;
-                }
+  return {
+    title: product.name,
+    description,
+    openGraph: {
+      title: product.name,
+      description,
+      url: pageUrl,
+      type: "article",
+      images: product.imageUrl ? [product.imageUrl] : undefined,
+    },
+  };
+}
 
-                setProduct(data.product);
-            } catch (fetchError) {
-                console.error('제품 상세 불러오기 실패:', fetchError);
-                setError('제품 정보를 불러오지 못했습니다.');
-            } finally {
-                setLoading(false);
-            }
-        }
+export default async function ProductDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const product = await getProduct(id);
 
-        fetchProduct();
-    }, [productId]);
+  if (!product || !product.isVisible) {
+    notFound();
+  }
 
-    if (loading) {
-        return <div className="p-20 text-center text-gray-500">제품 상세를 불러오는 중...</div>;
-    }
+  return (
+    <div className="py-10 px-4">
+      <div className="max-w-4xl mx-auto">
+        <Link href="/products" className="text-sm text-gray-500 hover:text-gray-900">
+          ← 제품 목록
+        </Link>
 
-    if (error) {
-        return (
-            <div className="p-20 text-center text-gray-500">
-                <p className="mb-6">{error}</p>
-                <Link href="/products" className="text-blue-600 font-bold hover:underline">
-                    제품 목록으로 돌아가기
-                </Link>
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="bg-blue-50 rounded-2xl overflow-hidden flex items-center justify-center">
+            {product.imageUrl ? (
+              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-gray-400 font-bold text-xl py-20">No Image</span>
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            <div className="text-blue-600 text-sm font-bold uppercase tracking-wide mb-3">
+              Spec: {product.spec}
             </div>
-        );
-    }
-
-    if (!product) {
-        return (
-            <div className="p-20 text-center text-gray-500">
-                <p className="mb-6">제품 정보를 찾을 수 없습니다.</p>
-                <Link href="/products" className="text-blue-600 font-bold hover:underline">
-                    제품 목록으로 돌아가기
-                </Link>
-            </div>
-        );
-    }
-
-    return (
-        <div className="py-10 px-4">
-            <div className="max-w-4xl mx-auto">
-                <Link href="/products" className="text-sm text-gray-500 hover:text-gray-900">
-                    ← 제품 목록
-                </Link>
-
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div className="bg-blue-50 rounded-2xl overflow-hidden flex items-center justify-center">
-                        {product.imageUrl ? (
-                            <img
-                                src={product.imageUrl}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <span className="text-gray-400 font-bold text-xl py-20">No Image</span>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col">
-                        <div className="text-blue-600 text-sm font-bold uppercase tracking-wide mb-3">
-                            Spec: {product.spec}
-                        </div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-6">{product.name}</h1>
-                        <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-                            {product.description}
-                        </p>
-                    </div>
-                </div>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-6">{product.name}</h1>
+            <p className="text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
