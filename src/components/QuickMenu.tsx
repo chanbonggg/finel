@@ -6,7 +6,7 @@ export default function QuickMenu() {
 
             {/* 1. 카카오톡 상담 버튼 (노란색) */}
             <Link
-                href="https://open.kakao.com" // 나중에 실제 카톡 링크로 변경
+                href="https://open.kakao.com/o/ssQyV5gi" // 나중에 실제 카톡 링크로 변경
                 target="_blank"
                 className="bg-yellow-400 text-black p-4 rounded-full shadow-lg hover:bg-yellow-500 hover:scale-110 transition flex items-center justify-center w-14 h-14"
                 aria-label="카카오톡 상담"

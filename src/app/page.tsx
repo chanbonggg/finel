@@ -39,7 +39,7 @@ export default async function Home() {
             href="/products"
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-full transition shadow-lg"
           >
-            제품 카탈로그 보기
+            제품 보기
           </Link>
           <Link
             href="/contact"

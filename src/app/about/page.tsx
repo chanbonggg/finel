@@ -17,7 +17,7 @@ export default function AboutPage() {
             {/* 4. [FR-01] 파트너사 (Partners) */}
             <section>
                 <h2 className="text-2xl font-bold mb-8 border-l-4 border-gray-800 pl-4">
-                    주요 파트너사
+                    주요 파트너사 홈페이지
                 </h2>
 
                 {/* 2. 코드가 훨씬 깔끔해졌죠? */}
