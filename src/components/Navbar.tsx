@@ -1,12 +1,21 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Navbar() {
   return (
     <nav className="bg-gray-800 text-white p-4">
       <div className="container mx-auto flex justify-between items-center">
         {/* 로고 영역 */}
-        <Link href="/" className="text-xl font-bold">
-          FINEL
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo.png"
+            alt="FINEL 로고"
+            width={150}
+            height={60}
+            quality={100}
+            //className="h-10 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* 메뉴 링크 영역 */}
@@ -19,9 +28,6 @@ export default function Navbar() {
           </li>
           <li>
             <Link href="/contact" className="hover:text-gray-300">문의하기</Link>
-          </li>
-          <li>
-            <Link href="/admin" className="text-red-400 hover:text-red-300">관리자</Link>
           </li>
         </ul>
       </div>

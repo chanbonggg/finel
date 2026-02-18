@@ -319,6 +319,159 @@ Goal: Documentation only.
 Do not modify code.
 
 ---
+## @feature
+
+Goal: Implement a new feature fully.
+
+Steps:
+
+1. analyze existing structure
+2. create required files
+3. modify necessary files
+4. ensure build works
+
+Output:
+
+- files created
+- files modified
+- usage instructions
+
+Example:
+
+@feature implement password reset
+
+---
+
+## @create
+
+Goal: Create new files.
+
+Rules:
+
+- Create file at exact path specified
+- Follow existing project structure and conventions
+- Do not modify unrelated files
+
+Output:
+
+- file path
+- full file content
+- purpose explanation
+
+Example usage:
+
+@create app/api/auth/login/route.ts
+
+---
+
+## @edit
+
+Goal: Modify an existing file safely.
+
+Rules:
+
+- Only change what is necessary
+- Do not rewrite entire file unless required
+- Preserve behavior unless instructed otherwise
+
+Output:
+
+- file modified
+- exact changes
+- explanation
+
+Example usage:
+
+@edit app/lib/auth.ts fix token validation bug
+
+---
+
+## @modify
+
+Goal: Modify multiple files for a feature or fix.
+
+Rules:
+
+- identify required files first
+- minimize scope of changes
+- preserve architecture
+
+Output:
+
+- files changed
+- summary of changes
+- reasoning
+
+Example usage:
+
+@modify implement refresh token system
+
+---
+
+## @refactor
+
+Goal: Improve code quality without changing behavior.
+
+Rules:
+
+- preserve functionality
+- improve readability, structure, types
+
+DO NOT:
+
+- change business logic
+- change external behavior
+
+Output:
+
+- files changed
+- improvements made
+
+Example usage:
+
+@refactor app/lib/prisma.ts
+
+---
+
+## @delete
+
+Goal: Safely delete unused files.
+
+Rules:
+
+- confirm file is unused
+- explain why safe
+
+Output:
+
+- file deleted
+- reasoning
+
+Example usage:
+
+@delete app/lib/old-auth.ts
+
+---
+
+## @rename
+
+Goal: Rename files safely.
+
+Rules:
+
+- update imports
+- update references
+
+Output:
+
+- old path
+- new path
+- updated files
+
+Example usage:
+
+@rename app/lib/db.ts app/lib/prisma.ts
+
 
 # Coding standards
 

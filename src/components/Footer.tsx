@@ -20,7 +20,7 @@ export default function Footer() {
                     <p>
                         <span className="font-bold">Finel</span>
                         <span className="mx-2 text-gray-300">|</span>
-                        대표: 김치완
+                        대표: <Link href="/admin" className="text-inherit cursor-default">김치완</Link>
                         <span className="mx-2 text-gray-300">|</span>
                         사업자등록번호: 395-08-02241
                     </p>
