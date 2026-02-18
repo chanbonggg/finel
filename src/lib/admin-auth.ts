@@ -6,6 +6,7 @@ export interface AdminPayload extends JWTPayload {
     username: string;
 }
 
+
 /**
  * requireAdmin의 반환값이 성공적인 AdminPayload인지 확인하는 타입 가드입니다.
  * @param result requireAdmin의 반환값
