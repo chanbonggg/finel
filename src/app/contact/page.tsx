@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -100,8 +100,8 @@ function ContactContent() {
 
             const data = await res.json();
 
-            if (res.ok) {
-                alert(`✅ 문의가 성공적으로 접수되었습니다!\n담당자가 ${formData.phone}으로 곧 연락드리겠습니다.`);
+            if (res.ok || data.inquirySaved) {
+                alert(`문의가 성공적으로 접수되었습니다!\n담당자가 ${formData.phone}으로 곧 연락드리겠습니다.`);
                 setFormData({
                     name: '', company: '', phone: '', email: '', product: '', message: '', agreed: false, honey: ''
                 });
