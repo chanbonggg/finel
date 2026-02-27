@@ -1,5 +1,13 @@
 import { PARTNERS } from "@/constants/partners";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+    title: "회사 소개",
+    description: "finel 회사 소개 및 파트너 정보를 확인할 수 있습니다.",
+    alternates: {
+        canonical: "/about",
+    },
+};
 
 export default function AboutPage() {
     return (

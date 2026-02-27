@@ -1,4 +1,4 @@
-# AGENTS.md â€” finel (Next.js 16 + Prisma + Neon + Vercel)
+# AGENTS.md ??finel (Next.js 16 + Prisma + Neon + Vercel)
 
 This project uses:
 
@@ -96,6 +96,45 @@ If user message starts with tag, follow that mode strictly.
 
 ---
 
+## @plan
+
+Goal: Create an execution plan only (no code changes).
+
+Use when:
+
+- user asks for plan mode
+- task is large/unclear and needs step-by-step agreement first
+
+Rules:
+
+- DO NOT edit files
+- DO NOT run DB mutation commands
+- inspect only the minimum relevant files
+- keep scope tight and aligned to user goal
+
+Plan requirements:
+
+1. briefly restate goal and constraints
+2. list assumptions and unknowns
+3. provide step-by-step plan with priorities
+4. define verification criteria for each step
+5. mark risk level (low/medium/high) and rollback idea if applicable
+
+Output format:
+
+- objective
+- constraints
+- assumptions
+- plan steps
+- risks
+- verification
+- questions for user (only if blocking)
+
+Example usage:
+
+@plan admin inquiry page ¼º´É ÀÌ½´ ÇØ°á °èÈ¹¸¸ ÀÛ¼º
+
+---
 ## @build
 
 Goal: Make project build successfully.
@@ -306,7 +345,7 @@ Goal: Code review.
 
 Output:
 
-- issues (high â†’ low priority)
+- issues (high ??low priority)
 - suggested fixes
 - risks
 
@@ -513,3 +552,91 @@ Build is successful only if:
 completes with zero errors
 
 AND no unintended DB schema mutation occurred.
+
+---
+
+## @design
+
+Goal: Design implementation approach before coding.
+
+Use when:
+
+- user asks for design first
+- requirements need technical structure before build
+
+Rules:
+
+- DO NOT modify code
+- propose minimal, practical implementation
+- keep compatibility with existing architecture
+
+Design requirements:
+
+1. define scope (in/out)
+2. define affected files and responsibilities
+3. define data flow and server/client boundaries
+4. define edge cases and rollback idea
+5. define validation strategy before build
+
+Output format:
+
+- objective
+- scope
+- architecture decisions
+- file-level design
+- risks and mitigations
+- implementation checklist
+
+---
+
+## @verify
+
+Goal: Verify changes are correct, safe, and releasable.
+
+Rules:
+
+- verify with minimal required commands first
+- do not run DB mutation commands automatically
+- if verification requires `npm run build`, follow DB safety warning/confirmation first
+
+Verification checklist:
+
+1. static checks (lint/typecheck if available)
+2. targeted runtime checks for changed feature
+3. regression check for related flows
+4. final build/status confirmation (only when safe)
+
+Output format:
+
+- checks run
+- pass/fail per check
+- unresolved risks
+- release readiness
+
+---
+
+## @jina
+
+Goal: Execute a full delivery flow in this exact order:
+
+PLAN -> ANALYZE -> DESIGN -> BUILD -> VERIFY -> REVIEW
+
+Execution rules:
+
+1. Follow each mode's constraints and output format in sequence.
+2. Do not skip a step unless user explicitly asks.
+3. Respect DB safety rules at BUILD/VERIFY steps (warn + confirm when needed).
+4. If blocked, stop at the current step and report blocker + next required input.
+
+Output format:
+
+- [PLAN]
+- [ANALYZE]
+- [DESIGN]
+- [BUILD]
+- [VERIFY]
+- [REVIEW]
+
+Example usage:
+
+@jina admin inquiry page slow response issue
