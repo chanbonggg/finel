@@ -25,6 +25,13 @@ export const metadata: Metadata = {
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,
+    ...(process.env.NAVER_SITE_VERIFICATION
+      ? {
+          other: {
+            "naver-site-verification": process.env.NAVER_SITE_VERIFICATION,
+          },
+        }
+      : {}),
   },
   title: {
     default: "finel",
