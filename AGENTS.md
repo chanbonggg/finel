@@ -132,7 +132,7 @@ Output format:
 
 Example usage:
 
-@plan admin inquiry page ¼º´É ÀÌ½´ ÇØ°á °èÈ¹¸¸ ÀÛ¼º
+@plan admin inquiry page ï¿½ï¿½ï¿½ï¿½ ï¿½Ì½ï¿½ ï¿½Ø°ï¿½ ï¿½ï¿½È¹ï¿½ï¿½ ï¿½Û¼ï¿½
 
 ---
 ## @build
@@ -341,13 +341,139 @@ Minimal diff only.
 
 ## @review
 
-Goal: Code review.
+Goal: Perform a thorough, structured code review of the specified files or the entire codebase.
 
-Output:
+### How to invoke
 
-- issues (high ??low priority)
-- suggested fixes
-- risks
+```
+@review                         # review all changed files (git diff)
+@review src/app/api/auth/       # review a specific directory
+@review src/lib/admin-auth.ts   # review a single file
+@review --full                  # review the entire codebase
+```
+
+---
+
+### Review checklist (run ALL categories for every review)
+
+#### 1. Security (CRITICAL â€” block merge if any HIGH found)
+
+| Check | What to look for |
+|---|---|
+| Authentication | Every mutating endpoint (POST/PATCH/DELETE) must call `requireAdmin` and check `isAdminPayload`. Read endpoints exposing private data also need auth. |
+| Authorization | Auth check result must be verified before the handler proceeds. |
+| Input validation | All user-supplied fields must be validated (type, format, length). Use Zod for API routes. Never trust `body.*` directly. |
+| XSS | Never interpolate raw user input into HTML strings (email templates, rendered HTML). Escape or sanitize first. |
+| SQL/NoSQL injection | Prisma parameterises queries automatically. But verify no raw `$queryRaw` with string interpolation. |
+| Secrets | No hardcoded secrets, tokens, or credentials. All secrets via `process.env.*`. |
+| Cookie flags | Auth cookies must have `httpOnly: true`, `secure: true` (production), `sameSite: 'strict'`. |
+| Error leakage | Catch blocks must not expose internal details (stack traces, DB errors) to the client. Log internally, return generic messages. |
+| ID validation | Route params parsed with `parseInt`/`Number` must validate with `isNaN()` before use. |
+
+#### 2. TypeScript quality
+
+| Check | What to look for |
+|---|---|
+| No `any` | Replace `any` with proper types or generics. |
+| No `as any` casts | Each cast is a type-safety escape hatch â€” flag and justify. |
+| Return types | Functions should have explicit return types, especially async handlers. |
+| Nullability | Nullable/optional fields must be handled (optional chaining, null checks). |
+| Zod consistency | If Zod is used in one endpoint, use it uniformly in related endpoints. |
+
+#### 3. Logic & correctness
+
+| Check | What to look for |
+|---|---|
+| Error handling completeness | Every `await` that can throw must be in try/catch or have `.catch()`. |
+| Optimistic UI | Client hooks must verify server response before updating local state. |
+| Redundant DB queries | `create` then `findUnique` can be replaced with `create` + `include`. |
+| Edge cases | Empty strings, zero, negative IDs, missing optional fields. |
+| Prisma error types | Catch `Prisma.PrismaClientKnownRequestError` for P2025 (not found), P2002 (unique violation) instead of generic 500. |
+
+#### 4. Performance
+
+| Check | What to look for |
+|---|---|
+| N+1 queries | Loops calling Prisma inside should use `include` or batch queries. |
+| Unnecessary re-fetches | Client code should not re-fetch the full list when a single item changes â€” prefer optimistic update or targeted invalidation. |
+| Bundle size | Client components (`'use client'`) should import only what is needed. |
+| Production logging | `log: ['query']` in Prisma client leaks query logs in production. Guard with `NODE_ENV`. |
+
+#### 5. Code style & maintainability
+
+| Check | What to look for |
+|---|---|
+| Consistency | Validation approach, naming conventions, and response shape must be consistent across related endpoints. |
+| Dead code | Unused imports, variables, commented-out code. |
+| Magic strings/numbers | Repeated literals should be constants. |
+| Redundant operations | `.partial()` on a schema where all fields are already `.optional()`. |
+
+---
+
+### Output format
+
+```
+## Code Review: <filename or scope>
+Reviewed: <date>
+
+### Summary
+<1-3 sentence overview of overall quality>
+
+---
+
+### ðŸ”´ HIGH (must fix before merge)
+#### [H1] <short title>
+- File: `path/to/file.ts` line XX
+- Issue: <what is wrong>
+- Risk: <what can go wrong>
+- Fix:
+\`\`\`ts
+// suggested fix
+\`\`\`
+
+---
+
+### ðŸŸ¡ MEDIUM (should fix soon)
+#### [M1] <short title>
+- File: `path/to/file.ts` line XX
+- Issue: <what is wrong>
+- Risk: <what can go wrong>
+- Fix: <suggested fix>
+
+---
+
+### ðŸŸ¢ LOW (nice to have)
+#### [L1] <short title>
+- File: `path/to/file.ts` line XX
+- Issue: <what is wrong>
+- Fix: <suggested fix>
+
+---
+
+### Positives
+<list things done well â€” recognition matters>
+
+---
+
+### Action items
+| Priority | Item | Owner |
+|---|---|---|
+| HIGH | Fix H1, H2 | â€” |
+| MEDIUM | Fix M1 | â€” |
+```
+
+---
+
+### Project-specific rules (finel)
+
+1. **Every mutating API route must call `requireAdmin` and guard with `isAdminPayload`.**
+2. **Never interpolate unsanitized user input into HTML email templates.**
+3. **Always validate route param IDs with `isNaN` after `parseInt`/`Number`.**
+4. **Use Zod schemas uniformly across all API routes â€” not just PATCH.**
+5. **Client hooks (`useProductAdmin`, `useInquiry`) must check `res.ok && data.success` before updating state.**
+6. **`prisma` log level must be guarded: only `['query']` in development, `['error']` in production.**
+7. **GET endpoints that expose private user data (inquiries) must require admin auth.**
+8. **Do not expose raw Prisma or DB errors to the client response.**
 
 ---
 
