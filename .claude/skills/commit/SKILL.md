@@ -1,6 +1,8 @@
 ---
 name: commit
 description: git 변경 사항을 분석해서 한국어 커밋 메시지를 작성하고 커밋 후 푸시까지 진행한다
+disable-model-invocation: false
+user-invocable: true
 ---
 
 git status, git diff를 확인한 후 변경 사항을 분석해서 한국어 커밋 메시지를 작성하고 커밋 후 푸시까지 진행한다.
@@ -64,7 +66,7 @@ git log --oneline -5
    - `.env`, `.env.local`, `.env.*`
    - `*secret*`, `*credential*`, `*token*`
    - `node_modules/`
-   - `.claude/` 디렉터리 (에이전트/스킬 파일 포함)
+   - `.claude/settings.local.json` (개인 설정 파일)
 
 3. 스테이징 안 된 파일(untracked + unstaged 수정)이 있으면 **자동으로 전부 add**한다:
 
