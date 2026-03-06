@@ -28,8 +28,9 @@ export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<number | 'all'>('all');
-    const [visibleCount, setVisibleCount] = useState(4);
+    const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const ITEMS_PER_PAGE = 10;
     const searchParams = useSearchParams();
     const router = useRouter();
     const selectedCategory = searchParams.get('category') || 'all';
@@ -61,12 +62,17 @@ export default function ProductsPage() {
         fetchProductsAndCategories();
     }, []);
 
+    // 카테고리 변경 시 1페이지로 리셋
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory, selectedCompanyId]);
+
     // 회사 선택 핸들러
     const handleCompanyClick = (id: number | 'all') => {
         setSelectedCompanyId(id);
         // 회사가 바뀌면 카테고리 선택을 초기화 ('All'로)
         router.replace('/products');
-        setVisibleCount(4);
+        setCurrentPage(1);
     };
 
     const categoryOptions = useMemo(() => {
@@ -104,7 +110,11 @@ export default function ProductsPage() {
         return result;
     }, [products, selectedCompanyId, selectedCategory]);
 
-    const displayedProducts = filteredProducts.slice(0, visibleCount);
+    const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+    const displayedProducts = filteredProducts.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
 
     const categoryLinkClass = (categoryName: string) =>
         selectedCategory === categoryName
@@ -219,14 +229,35 @@ export default function ProductsPage() {
                 ))}
             </section>
 
-            {/* 더 보기 버튼 */}
-            {visibleCount < filteredProducts.length && (
-                <div className="flex justify-center mt-12">
+            {/* 페이지네이션 */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-12">
                     <button
-                        onClick={() => setVisibleCount((prev) => prev + 4)}
-                        className="px-8 py-3 bg-white border border-gray-300 rounded-full font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition shadow-sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
                     >
-                        더 보기 +
+                        ‹
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 rounded-lg font-bold text-sm transition ${
+                                currentPage === page
+                                    ? 'bg-gray-900 text-white'
+                                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                    >
+                        ›
                     </button>
                 </div>
             )}
