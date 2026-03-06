@@ -30,7 +30,7 @@ export default function ProductsPage() {
     const [selectedCompanyId, setSelectedCompanyId] = useState<number | 'all'>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
-    const ITEMS_PER_PAGE = 10;
+    const ITEMS_PER_PAGE = 9;
     const searchParams = useSearchParams();
     const router = useRouter();
     const selectedCategory = searchParams.get('category') || 'all';
@@ -98,7 +98,7 @@ export default function ProductsPage() {
         if (selectedCompanyId !== 'all') {
             result = result.filter(p => p.companyId === selectedCompanyId);
         }
-        
+
         // 2. 카테고리 필터링
         if (selectedCategory !== 'all') {
             result = result.filter((product) => product.category === selectedCategory);
@@ -144,11 +144,10 @@ export default function ProductsPage() {
                     <button
                         key={partner.id}
                         onClick={() => handleCompanyClick(partner.id)}
-                        className={`h-16 w-32 p-2 rounded-xl border-2 transition flex items-center justify-center bg-white ${
-                            selectedCompanyId === partner.id
+                        className={`h-16 w-32 p-2 rounded-xl border-2 transition flex items-center justify-center bg-white ${selectedCompanyId === partner.id
                                 ? 'border-blue-600 ring-2 ring-blue-100 shadow-md'
                                 : 'border-gray-200 hover:border-blue-400 hover:shadow-sm'
-                        }`}
+                            }`}
                         title={partner.name}
                     >
                         <img
@@ -243,11 +242,10 @@ export default function ProductsPage() {
                         <button
                             key={page}
                             onClick={() => setCurrentPage(page)}
-                            className={`w-10 h-10 rounded-lg font-bold text-sm transition ${
-                                currentPage === page
+                            className={`w-10 h-10 rounded-lg font-bold text-sm transition ${currentPage === page
                                     ? 'bg-gray-900 text-white'
                                     : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }`}
+                                }`}
                         >
                             {page}
                         </button>

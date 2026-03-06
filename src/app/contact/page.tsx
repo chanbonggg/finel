@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import PhoneButton from '@/components/PhoneButton';
 import { useSearchParams } from 'next/navigation';
 
 // DB에서 받아올 제품 데이터 타입 정의
@@ -121,10 +122,13 @@ function ContactContent() {
         <div className="max-w-3xl mx-auto py-10 px-4">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
-                <p className="text-gray-600">
+                <p className="text-gray-600 mb-6">
                     제품 도입을 위한 전문 상담을 신청하세요.<br />
                     담당자가 확인 후 신속하게 연락드리겠습니다.
                 </p>
+                <div className="flex justify-center">
+                    <PhoneButton size="sm" />
+                </div>
             </div>
 
             <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-2xl p-6 md:p-12 shadow-lg relative">

@@ -1,115 +1,24 @@
 ﻿'use client';
 
-import { useState, useEffect } from 'react';
-import InquiryTab from '@/app/admin/InquiryTap' // 분리한 컴포넌트 가져오기
-import ProductTab from '@/app/admin/ProductTap'; // 분리한 컴포넌트 가져오기
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import InquiryTab from '@/app/admin/InquiryTap'
+import ProductTab from '@/app/admin/ProductTap';
 
 export default function AdminPage() {
-    // --- 상태 관리 ---
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
     const [activeTab, setActiveTab] = useState("inquiry");
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const router = useRouter();
 
-    // 1. 초기 로그인 체크
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                // 쿠키는 브라우저가 자동으로 전송하므로 별도 헤더 설정 불필요
-                const res = await fetch('/api/auth/verify');
-                if (res.ok) {
-                    setIsLoggedIn(true);
-                } else {
-                    setIsLoggedIn(false);
-                }
-            } catch {
-                setIsLoggedIn(false);
-            } finally {
-                setIsCheckingAuth(false);
-            }
-        };
-
-        checkAuth();
-    }, []);
-
-    // 2. 로그인 처리
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-            });
-            const data = await res.json();
-
-            if (res.ok && data.success) {
-                // localStorage는 더 이상 사용하지 않음. 서버가 httpOnly 쿠키를 설정.
-                setIsLoggedIn(true);
-            } else {
-                alert(data.message || "로그인 실패");
-            }
-        } catch (error) {
-            alert("서버 오류");
-        }
-    };
-
-    // 3. 로그아웃
     const handleLogout = async () => {
         try {
-            // 서버에 쿠키 삭제 요청
             await fetch('/api/auth/logout');
-        } catch (error) {
-            console.error("Logout failed", error);
+        } catch {
+            // 실패해도 로그인 페이지로 이동
         } finally {
-            // API 요청 성공 여부와 관계없이 프론트엔드 상태를 로그아웃으로 변경
-            setIsLoggedIn(false);
-            setPassword("");
+            router.replace('/admin/login');
         }
     };
 
-    // --- (1) 로그인 화면 ---
-    if (isCheckingAuth) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                <div className="text-gray-500">인증 확인 중...</div>
-            </div>
-        );
-    }
-
-    if (!isLoggedIn) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                <form onSubmit={handleLogin} className="bg-white p-10 rounded-xl shadow-lg w-96">
-                    <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">관리자 접속</h1>
-                    <div className="mb-4">
-                        <label htmlFor="username-input" className="sr-only">아이디 (ID)</label>
-                        <input
-                            id="username-input"
-                            type="text" placeholder="아이디 (ID)" value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            className="w-full border p-3 rounded"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label htmlFor="password-input" className="sr-only">비밀번호 (Password)</label>
-                        <input
-                            id="password-input"
-                            type="password" placeholder="비밀번호 (Password)" value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full border p-3 rounded"
-                        />
-                    </div>
-                    <button type="submit" className="w-full bg-gray-900 text-white p-3 rounded font-bold hover:bg-gray-700">
-                        로그인
-                    </button>
-                </form>
-            </div>
-        );
-    }
-
-    // --- (2) 대시보드 화면 ---
     return (
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-6xl mx-auto">

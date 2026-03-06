@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma"; // 👈 DB 직접 접속을 위해 추가
+import PhoneButton from "@/components/PhoneButton";
 
 export const dynamic = 'force-dynamic'; // 항상 최신 데이터를 보여주기 위해 설정
 
@@ -27,14 +28,14 @@ export default async function Home() {
       {/* 1. 히어로 섹션 (메인 배너) */}
       <section className="bg-gray-900 text-white py-20 px-6 rounded-b-3xl text-center shadow-xl">
         <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
-          오랜 경험이 만든 <br />
-          <span className="text-blue-400">믿을 수 있는 안정성</span>
+          신뢰할 수 있는 기술, <br />
+          <span className="text-blue-400">검증된 안정성</span>
         </h1>
         <p className="text-gray-400 mb-10 max-w-2xl mx-auto text-lg">
-          꾸준한 품질과 안정적인 공급으로 귀사의 비즈니스를 함께합니다.
-          수많은 계약과 납품 실적이 저희의 신뢰를 증명합니다.
+          책임 있는 계약과 지속적인 지원으로
+          고객의 비즈니스 성장을 꾸준히 돕습니다
         </p>
-        <div className="flex justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           <Link
             href="/products"
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-full transition shadow-lg"
@@ -47,6 +48,7 @@ export default async function Home() {
           >
             견적 및 제휴 문의
           </Link>
+          <PhoneButton />
         </div>
       </section>
 
