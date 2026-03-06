@@ -27,12 +27,12 @@ export default async function Home() {
       {/* 1. 히어로 섹션 (메인 배너) */}
       <section className="bg-gray-900 text-white py-20 px-6 rounded-b-3xl text-center shadow-xl">
         <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
-          고객의 성공을 위한 <br />
-          <span className="text-blue-400">최적의 솔루션</span>을 제공합니다.
+          오랜 경험이 만든 <br />
+          <span className="text-blue-400">믿을 수 있는 안정성</span>
         </h1>
         <p className="text-gray-400 mb-10 max-w-2xl mx-auto text-lg">
-          우리는 단순한 제품 판매를 넘어, 귀사의 비즈니스 환경에 맞는
-          맞춤형 컨설팅과 기술 지원을 약속드립니다.
+          꾸준한 품질과 안정적인 공급으로 귀사의 비즈니스를 함께합니다.
+          수많은 계약과 납품 실적이 저희의 신뢰를 증명합니다.
         </p>
         <div className="flex justify-center gap-4">
           <Link
@@ -71,12 +71,11 @@ export default async function Home() {
             </div>
           ) : (
             formattedProducts.map((product, index) => (
-              <div key={product.id} className="group border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition duration-300 bg-white">
+              <Link key={product.id} href={`/products/${product.id}`} className="group border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition duration-300 bg-white flex flex-col">
 
                 {/* 이미지 영역 (색상 랜덤 배정) */}
                 <div className={`h-56 ${bgColors[index % bgColors.length]} flex items-center justify-center text-gray-400`}>
                   {product.imageUrl ? (
-                    /* 이미지가 있다면 보여주기 (현재는 비워둠) */
                     <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
                   ) : (
                     <span className="group-hover:scale-110 transition duration-300 font-bold text-2xl opacity-20">
@@ -86,24 +85,16 @@ export default async function Home() {
                 </div>
 
                 {/* 정보 영역 */}
-                <div className="p-6">
+                <div className="p-6 flex flex-col flex-grow">
                   <div className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-wide">
                     {product.categoryName} | {product.spec}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">{product.name}</h3>
-                  <p className="text-gray-600 text-sm mb-6 line-clamp-2 h-10 leading-relaxed">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 truncate group-hover:text-blue-600 transition">{product.name}</h3>
+                  <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
                     {product.description}
                   </p>
-
-                  {/* 버튼: 구매가 아닌 '문의' 유도 */}
-                  <Link
-                    href={`/contact?product=${encodeURIComponent(product.name)}`} // 한글 깨짐 방지
-                    className="block w-full text-center bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-gray-700 transition"
-                  >
-                    상세 견적 문의
-                  </Link>
                 </div>
-              </div>
+              </Link>
             ))
           )}
         </div>

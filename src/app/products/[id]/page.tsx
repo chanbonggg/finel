@@ -83,7 +83,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
               Spec: {product.spec}
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-6">{product.name}</h1>
-            <p className="text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
+            <p className="text-gray-600 leading-relaxed whitespace-pre-line mb-10">{product.description}</p>
+            <Link
+              href={`/contact?product=${encodeURIComponent(product.name)}`}
+              className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition shadow-md"
+            >
+              이 제품 문의하기
+            </Link>
           </div>
         </div>
       </div>
