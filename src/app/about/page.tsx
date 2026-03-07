@@ -1,5 +1,6 @@
 import { PARTNERS } from "@/constants/partners";
 import type { Metadata } from "next";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
     title: "회사 소개",
@@ -10,8 +11,33 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
+    const siteUrl = getSiteUrl();
+
+    // LocalBusiness JSON-LD
+    const localBusinessJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        name: "finel",
+        description: "산업용 공압 부품 전문 기업",
+        url: siteUrl,
+        telephone: "02-2693-3569",
+        faxNumber: "032-232-8823",
+        address: {
+            "@type": "PostalAddress",
+            addressCountry: "KR",
+            addressLocality: "인천광역시 동구",
+            postalCode: "22028",
+            streetAddress: "방축로 37번길 30, 2동 206호",
+        },
+        image: `${siteUrl}/og-image.png`,
+    };
+
     return (
         <div className="flex flex-col gap-16 py-10">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+            />
 
             {/* 1. 회사 소개 헤더 (Vision) */}
             <section className="text-center">
