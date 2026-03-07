@@ -13,14 +13,14 @@ interface Props {
 }
 
 export default function ProductForm({ data, actions, refs }: Props) {
-    const { newProduct, selectedCompanyId, categories, isUploading, isAddingCategory, newCategoryName } = data;
-    const { setSelectedCompanyId, setNewProduct, triggerFileInput, handleImageUpload, handleAddProduct, setIsAddingCategory, setNewCategoryName, handleAddCategory, handleDeleteCategory } = actions;
+    const { newProduct, selectedCompanyId, categories, isUploading, isAddingCategory, newCategoryName, editingProductId } = data;
+    const { setSelectedCompanyId, setNewProduct, triggerFileInput, handleImageUpload, handleAddProduct, setIsAddingCategory, setNewCategoryName, handleAddCategory, handleDeleteCategory, handleCancelEdit } = actions;
     const { fileInputRef } = refs;
 
     return (
         <div className="mb-10 bg-gray-50/50 p-6 rounded-2xl border border-gray-200 shadow-sm">
             <h3 className="font-bold text-lg mb-5 text-gray-700 flex items-center gap-2">
-                새 제품 등록하기
+                {editingProductId ? "제품 정보 수정하기" : "새 제품 등록하기"}
             </h3>
 
             {/* 1. 회사 선택 */}
@@ -31,10 +31,14 @@ export default function ProductForm({ data, actions, refs }: Props) {
                             <button
                                 key={partner.id}
                                 onClick={() => setSelectedCompanyId(partner.id)}
-                                className={`px-4 py-2 rounded-lg border transition flex items-center gap-2 ${selectedCompanyId === partner.id
-                                    ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200'
-                                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                                    }`}
+                                disabled={Boolean(editingProductId)}
+                                className={`px-4 py-2 rounded-lg border transition flex items-center gap-2 ${
+                                    editingProductId
+                                        ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
+                                        : selectedCompanyId === partner.id
+                                        ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200'
+                                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                                }`}
                             >
                                 <span className="font-bold uppercase">{partner.name}</span>
                             </button>
@@ -139,8 +143,17 @@ export default function ProductForm({ data, actions, refs }: Props) {
                                 }`
                             }
                         >
-                            {isUploading ? "이미지 처리 중입니다..." : "제품 등록 완료"}
+                            {isUploading ? "이미지 처리 중입니다..." : (editingProductId ? "수정 완료" : "제품 등록 완료")}
                         </button>
+
+                        {editingProductId && (
+                            <button
+                                onClick={handleCancelEdit}
+                                className="w-full py-3.5 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
+                            >
+                                취소
+                            </button>
+                        )}
                     </div>
                 </div>
             )}

@@ -29,6 +29,8 @@ export function useProductAdmin() {
     const [isUploading, setIsUploading] = useState(false);
     // 선택된 회사 ID
     const [selectedCompanyId, setSelectedCompanyId] = useState<number | "">("");
+    // 수정 모드
+    const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
     const [newProduct, setNewProduct] = useState({
         name: '',
@@ -169,7 +171,7 @@ export function useProductAdmin() {
         }
     };
 
-    // --- 제품 등록 ---
+    // --- 제품 등록 / 수정 ---
     const handleAddProduct = async () => {
         if (!newProduct.name || !newProduct.categoryId) {
             alert("제품명과 카테고리는 필수입니다.");
@@ -177,24 +179,74 @@ export function useProductAdmin() {
         }
 
         try {
-            const res = await fetch('/api/products', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newProduct),
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                alert("제품 등록 완료!");
-                fetchProducts(); // 목록 새로고침
-                setNewProduct({ name: '', categoryId: '', spec: '', description: '', imageUrl: '' });
-                if (fileInputRef.current) fileInputRef.current.value = "";
+            if (editingProductId) {
+                // 수정 모드
+                const res = await fetch(`/api/products/${editingProductId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProduct),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("제품 수정 완료!");
+                    fetchProducts();
+                    handleCancelEdit();
+                } else {
+                    alert(`수정 실패: ${data.message}`);
+                }
             } else {
-                alert(`등록 실패: ${data.message || '알 수 없는 오류'}`);
+                // 추가 모드
+                const res = await fetch('/api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProduct),
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert("제품 등록 완료!");
+                    fetchProducts(); // 목록 새로고침
+                    setNewProduct({ name: '', categoryId: '', spec: '', description: '', imageUrl: '' });
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                } else {
+                    alert(`등록 실패: ${data.message || '알 수 없는 오류'}`);
+                }
             }
         } catch (error) {
-            alert("제품 등록 중 서버 오류가 발생했습니다.");
+            alert("제품 처리 중 서버 오류가 발생했습니다.");
         }
+    };
+
+    // --- 제품 수정 모드 진입 ---
+    const handleEditProduct = async (productId: number) => {
+        try {
+            const res = await fetch(`/api/products/${productId}`);
+            const data = await res.json();
+            if (data.success) {
+                const product = data.product;
+                setEditingProductId(productId);
+                setSelectedCompanyId(product.companyId);
+                setTimeout(() => {
+                    setNewProduct({
+                        name: product.name,
+                        categoryId: String(product.categoryId),
+                        spec: product.spec,
+                        description: product.description,
+                        imageUrl: product.imageUrl || ''
+                    });
+                }, 100);
+            }
+        } catch (error) {
+            alert("제품 정보를 불러올 수 없습니다.");
+        }
+    };
+
+    // --- 제품 수정 모드 취소 ---
+    const handleCancelEdit = () => {
+        setEditingProductId(null);
+        setNewProduct({ name: '', categoryId: '', spec: '', description: '', imageUrl: '' });
+        setSelectedCompanyId("");
+        if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     // --- 제품 삭제 ---
@@ -223,6 +275,7 @@ export function useProductAdmin() {
             newProduct,
             isAddingCategory,
             newCategoryName,
+            editingProductId,
         },
         actions: {
             setSelectedCompanyId,
@@ -235,6 +288,8 @@ export function useProductAdmin() {
             handleDeleteCategory,
             handleAddProduct,
             handleDelete,
+            handleEditProduct,
+            handleCancelEdit,
             triggerFileInput
         },
         refs: {

@@ -18,7 +18,7 @@ export default function ProductTab() {
             </div>
 
             <ProductForm data={data} actions={actions} refs={refs} />
-            <ProductTable products={data.products} isLoading={data.isLoading} onDelete={actions.handleDelete} />
+            <ProductTable products={data.products} isLoading={data.isLoading} onDelete={actions.handleDelete} onEdit={actions.handleEditProduct} />
         </div>
     );
 }

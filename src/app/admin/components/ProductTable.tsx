@@ -4,9 +4,10 @@ interface Props {
     products: Product[];
     isLoading: boolean;
     onDelete: (id: number) => void;
+    onEdit: (id: number) => void;
 }
 
-export default function ProductTable({ products, isLoading, onDelete }: Props) {
+export default function ProductTable({ products, isLoading, onDelete, onEdit }: Props) {
     return (
         <div className="overflow-hidden rounded-xl border border-gray-200">
             <table className="w-full text-left border-collapse">
@@ -45,6 +46,13 @@ export default function ProductTable({ products, isLoading, onDelete }: Props) {
                                 <p className="text-xs text-gray-400 line-clamp-1">{prod.description}</p>
                             </td>
                             <td className="p-4 text-center align-middle">
+                                <button
+                                    onClick={() => onEdit(prod.id)}
+                                    className="text-gray-600 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition mr-2"
+                                    title="수정하기"
+                                >
+                                    수정
+                                </button>
                                 <button
                                     onClick={() => onDelete(prod.id)}
                                     className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition"
