@@ -90,7 +90,7 @@ export default nextConfig;
 
 ---
 
-### **Phase 2: P1 (중요) - 구조화 데이터 + 환경 설정**
+### **Phase 2: P1 (중요) - 구조화 데이터**
 
 #### 2.1 `src/app/about/page.tsx` - LocalBusiness JSON-LD 추가
 **위치**: `src/app/about/page.tsx:12-20` (return 상단)
@@ -139,71 +139,23 @@ export default function AboutPage() {
 
 ---
 
-#### 2.2 `src/app/layout.tsx` - Twitter Card 메타데이터 추가
-**위치**: `src/app/layout.tsx:41-50` (openGraph 다음)
-**변경사항**:
-```typescript
-export const metadata: Metadata = {
-  // ... 기존 설정 ...
-  openGraph: {
-    // ... 기존 설정 ...
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "finel",
-    description: "산업용 공압 부품 전문 기업",
-    images: ["/og-image.png"],
-  },
-};
-```
-
-**근거**:
-- X(Twitter)에서 링크 공유 시 카드 미리보기 표시
-- OG만으로는 Twitter 최적화 불충분 (Twitter는 별도 태그 권장)
-- 소셜 미디어 바이럴 효과 증대
+**제외 항목**:
+- ~~2.2 `src/app/layout.tsx` - Twitter Card 메타데이터~~ (사용자 선택)
+- ~~2.3 `.env.example` 파일 생성~~ (사용자 선택)
 
 ---
 
-#### 2.3 `.env.example` 파일 생성
-**파일 생성**: `.env.example` (루트)
-**내용**:
-```env
-# Database
-DATABASE_URL=postgresql://user:password@host:port/database
-
-# Verification (SEO)
-GOOGLE_SITE_VERIFICATION=your-google-verification-code
-NAVER_SITE_VERIFICATION=your-naver-verification-code
-
-# Email (Contact Form)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-specific-password
-
-# JWT Secret (for admin authentication)
-JWT_SECRET=your-secure-random-string-here
-
-# Site Configuration
-NEXT_PUBLIC_SITE_URL=https://finel.co.kr
-```
-
-**근거**:
-- 배포자가 필요한 환경변수를 한눈에 파악
-- 민감한 정보 보호 (`.env` ≠ `.env.example`)
-- 온보딩 시간 단축, 배포 오류 방지
-
----
-
-## 📁 수정 파일 요약
+## 📁 수정 파일 요약 (사용자 선택 버전)
 
 | 파일 | 작업 | 라인 | 우선순위 |
 |------|------|------|---------|
 | `src/app/page.tsx` | metadata export 추가 | L1-15 | P0 |
 | `next.config.ts` | images.remotePatterns 추가 | L4-12 | P0 |
 | `src/app/about/page.tsx` | LocalBusiness JSON-LD 추가 | L12-35 | P1 |
-| `src/app/layout.tsx` | twitter 메타데이터 추가 | L51-57 | P1 |
-| `.env.example` | 새 파일 생성 | - | P1 |
+
+**제외된 항목**:
+- ❌ `src/app/layout.tsx` | twitter 메타데이터 추가
+- ❌ `.env.example` | 새 파일 생성
 
 ---
 
@@ -213,7 +165,6 @@ NEXT_PUBLIC_SITE_URL=https://finel.co.kr
 |--------|--------|------|----------|
 | **홈페이지 메타데이터 누락** | 높음 | 검색 결과 CTR 50% ↓ | ✅ 이번 계획에서 해결 |
 | **Cloudinary 이미지 최적화 미지원** | 중간 | 초기 로드 속도 5-10% 저하 | ✅ next.config.ts 설정으로 미리 준비 |
-| **환경변수 누락 (배포 시)** | 높음 | 배포 실패 | ✅ .env.example 문서화 |
 | **사이트 재배포 후 크롤러 미갱신** | 낮음 | SEO 효과 3-4주 지연 | 배포 후 Google Search Console에서 수동 요청 |
 
 ---
@@ -232,13 +183,10 @@ NEXT_PUBLIC_SITE_URL=https://finel.co.kr
 ### SEO 개선
 - **홈페이지 메타데이터**: +40-50% CTR 향상 (Google Search Console)
 - **LocalBusiness 스키마**: Google 비즈니스 프로필 자동 연결
-- **Twitter Card**: SNS 공유 시 이미지 카드 표시 (+20-30% 클릭율)
 - **sitemap 유지**: 크롤러 재방문 시간 단축
 
 ### 배포 준비
-- ✅ 환경변수 자동화 (`.env.example` 제공)
 - ✅ 이미지 최적화 기반 마련 (next.config.ts)
-- ✅ 여러 메타데이터 형식 대응 (OG, Twitter, JSON-LD)
 
 ---
 
