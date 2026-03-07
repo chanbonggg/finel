@@ -6,10 +6,10 @@ import { z } from 'zod';
 
 const productUpdateSchema = z.object({
     name: z.string().min(1, "이름은 필수입니다.").max(100, "이름은 100자 이내로 입력해주세요.").optional(),
-    categoryId: z.number().int().positive("카테고리를 선택해주세요.").optional(),
+    categoryId: z.union([z.number(), z.string().transform(Number)]).pipe(z.number().int().positive("카테고리를 선택해주세요.")).optional(),
     spec: z.string().max(200, "제품 스펙은 200자 이내로 입력해주세요.").optional(),
     description: z.string().optional(),
-    imageUrl: z.string().url("유효한 URL을 입력해주세요.").optional(),
+    imageUrl: z.string().url("유효한 URL을 입력해주세요.").optional().or(z.literal('')),
     isVisible: z.boolean().optional(),
 }).partial();
 

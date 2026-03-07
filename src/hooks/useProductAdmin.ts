@@ -181,10 +181,16 @@ export function useProductAdmin() {
         try {
             if (editingProductId) {
                 // 수정 모드
+                const { imageUrl, ...rest } = newProduct;
+                const updatePayload = {
+                    ...rest,
+                    categoryId: newProduct.categoryId ? Number(newProduct.categoryId) : undefined,
+                    ...(imageUrl ? { imageUrl } : {}),
+                };
                 const res = await fetch(`/api/products/${editingProductId}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newProduct),
+                    body: JSON.stringify(updatePayload),
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -192,6 +198,7 @@ export function useProductAdmin() {
                     fetchProducts();
                     handleCancelEdit();
                 } else {
+                    console.error("제품 수정 실패:", { status: res.status, response: data, payload: updatePayload });
                     alert(`수정 실패: ${data.message}`);
                 }
             } else {
@@ -213,6 +220,7 @@ export function useProductAdmin() {
                 }
             }
         } catch (error) {
+            console.error("제품 처리 중 오류:", error);
             alert("제품 처리 중 서버 오류가 발생했습니다.");
         }
     };
