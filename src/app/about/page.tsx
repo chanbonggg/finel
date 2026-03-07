@@ -1,12 +1,22 @@
 import { PARTNERS } from "@/constants/partners";
 import type { Metadata } from "next";
 import { getSiteUrl } from "@/lib/site-url";
+import { SEO } from "@/constants/seo";
+
+const partnerNames = PARTNERS.map((partner) => partner.name);
 
 export const metadata: Metadata = {
     title: "회사 소개",
-    description: "finel 회사 소개 및 파트너 정보를 확인할 수 있습니다.",
+    description: `${SEO.siteName}(${SEO.siteNameKo}) 회사 소개 및 파트너 정보를 확인할 수 있습니다.`,
+    keywords: [...SEO.baseKeywords, "회사 소개", ...partnerNames],
     alternates: {
         canonical: "/about",
+    },
+    openGraph: {
+        title: `회사 소개 | ${SEO.siteName}`,
+        description: `${SEO.siteName}(${SEO.siteNameKo}) 회사 소개`,
+        url: "/about",
+        type: "website",
     },
 };
 

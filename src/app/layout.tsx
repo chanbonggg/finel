@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import QuickMenu from "@/components/QuickMenu";
 import Footer from "@/components/Footer";
 import { getSiteUrl } from "@/lib/site-url";
+import { SEO } from "@/constants/seo";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,15 +35,16 @@ export const metadata: Metadata = {
       : {}),
   },
   title: {
-    default: "finel",
-    template: "%s | finel",
+    default: SEO.siteName,
+    template: `%s | ${SEO.siteName}`,
   },
-  description: "산업용 공압 부품 전문 기업 finel",
+  description: `${SEO.companyName} ${SEO.siteName}`,
+  keywords: SEO.baseKeywords,
   openGraph: {
-    title: "finel",
-    description: "산업용 공압 부품 전문 기업 finel",
+    title: SEO.siteName,
+    description: `${SEO.companyName} ${SEO.siteName}`,
     url: siteUrl,
-    siteName: "finel",
+    siteName: SEO.siteName,
     images: ["/og-image.png"],
     locale: "ko_KR",
     type: "website",

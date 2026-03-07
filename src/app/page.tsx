@@ -2,19 +2,21 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma"; // 👈 DB 직접 접속을 위해 추가
 import { getSiteUrl } from "@/lib/site-url";
+import { SEO } from "@/constants/seo";
 import PhoneButton from "@/components/PhoneButton";
 
 export const dynamic = 'force-dynamic'; // 항상 최신 데이터를 보여주기 위해 설정
 
 export const metadata: Metadata = {
-  title: "산업용 공압 부품 전문 기업 | finel",
-  description: "finel은 신뢰할 수 있는 산업용 공압 부품을 공급하는 전문 기업입니다. 제품 상담, 기술 지원, 맞춤형 솔루션을 제공합니다.",
+  title: `${SEO.companyName} | ${SEO.siteName}`,
+  description: `${SEO.siteName}(${SEO.siteNameKo})은 신뢰할 수 있는 산업용 공압 부품을 공급하는 전문 기업입니다. 제품 상담, 기술 지원, 맞춤형 솔루션을 제공합니다.`,
+  keywords: [...SEO.baseKeywords, "공압 부품 공급", "전문 기업"],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "산업용 공압 부품 전문 기업 | finel",
-    description: "finel은 신뢰할 수 있는 산업용 공압 부품을 공급하는 전문 기업입니다.",
+    title: `${SEO.companyName} | ${SEO.siteName}`,
+    description: `${SEO.siteName}(${SEO.siteNameKo})은 신뢰할 수 있는 산업용 공압 부품을 공급하는 전문 기업입니다.`,
     url: "/",
     type: "website",
     images: ["/og-image.png"],

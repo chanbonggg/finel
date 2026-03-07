@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
+import { SEO } from "@/constants/seo";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -52,12 +53,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description = `${product.name} - ${product.spec}. ${product.description}`.slice(0, 160);
   const pageUrl = `/products/${product.id}`;
   const keywords = [
+    ...SEO.baseKeywords,
     product.name,
     product.spec,
     product.category.name,
-    "공압 부품",
-    "산업용 부품",
-    "finel",
   ];
 
   return {
@@ -68,7 +67,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: pageUrl,
     },
     openGraph: {
-      title: `${product.name} | finel`,
+      title: `${product.name} | ${SEO.siteName}`,
       description,
       url: pageUrl,
       type: "website",
@@ -78,7 +77,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: "summary_large_image",
-      title: `${product.name} | finel`,
+      title: `${product.name} | ${SEO.siteName}`,
       description,
       images: product.imageUrl ? [product.imageUrl] : undefined,
     },
