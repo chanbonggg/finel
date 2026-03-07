@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -8,7 +9,11 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-async function getProduct(id: string) {
+function safeJsonLd(obj: Record<string, unknown>): string {
+  return JSON.stringify(obj).replace(/<\/script/gi, "<\\/script");
+}
+
+const getProduct = cache(async function getProduct(id: string) {
   const productId = Number(id);
 
   if (!Number.isInteger(productId) || productId <= 0) {
@@ -31,7 +36,7 @@ async function getProduct(id: string) {
       },
     },
   });
-}
+});
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
@@ -108,7 +113,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     <div className="py-10 px-4">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(productJsonLd) }}
       />
       <div className="max-w-4xl mx-auto">
         <Link href="/products" className="text-sm text-gray-500 hover:text-gray-900">
