@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getSiteUrl } from "@/lib/site-url";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -23,6 +24,11 @@ async function getProduct(id: string) {
       description: true,
       imageUrl: true,
       isVisible: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
     },
   });
 }
@@ -38,17 +44,37 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const description = product.description.slice(0, 160);
+  const description = `${product.name} - ${product.spec}. ${product.description}`.slice(0, 160);
   const pageUrl = `/products/${product.id}`;
+  const keywords = [
+    product.name,
+    product.spec,
+    product.category.name,
+    "공압 부품",
+    "산업용 부품",
+    "finel",
+  ];
 
   return {
     title: product.name,
     description,
+    keywords,
+    alternates: {
+      canonical: pageUrl,
+    },
     openGraph: {
-      title: product.name,
+      title: `${product.name} | finel`,
       description,
       url: pageUrl,
-      type: "article",
+      type: "website",
+      images: product.imageUrl
+        ? [{ url: product.imageUrl, alt: product.name }]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | finel`,
+      description,
       images: product.imageUrl ? [product.imageUrl] : undefined,
     },
   };
@@ -62,8 +88,28 @@ export default async function ProductDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const siteUrl = getSiteUrl();
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.imageUrl || undefined,
+    category: product.category.name,
+    url: `${siteUrl}/products/${product.id}`,
+    brand: {
+      "@type": "Organization",
+      name: "finel",
+      url: siteUrl,
+    },
+  };
+
   return (
     <div className="py-10 px-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
       <div className="max-w-4xl mx-auto">
         <Link href="/products" className="text-sm text-gray-500 hover:text-gray-900">
           ← 제품 목록
