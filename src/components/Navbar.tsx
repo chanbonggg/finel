@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import ProductSearch from '@/components/ProductSearch';
 
 export default function Navbar() {
   return (
@@ -11,7 +12,10 @@ export default function Navbar() {
 
 
         {/* 메뉴 링크 영역 */}
-        <ul className="flex space-x-6">
+        <ul className="flex items-center space-x-6">
+          <li>
+            <ProductSearch />
+          </li>
           <li>
             <Link href="/about" className="hover:text-gray-300">회사소개</Link>
           </li>

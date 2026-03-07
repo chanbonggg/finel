@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-const PHONE = '010-2428-8813';
+const PHONE = '02-2693-3569';
 
 const PhoneIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
