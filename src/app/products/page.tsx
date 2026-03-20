@@ -168,7 +168,11 @@ export default function ProductsPage() {
                     {categoryOptions.map((category) => (
                         <Link
                             key={category.id}
-                            href={`/products?category=${encodeURIComponent(category.name)}`}
+                            href={
+                                typeof category.id === 'number'
+                                    ? `/products/category/${category.id}`
+                                    : `/products?category=${encodeURIComponent(category.name)}`
+                            }
                             className={categoryLinkClass(category.name)}
                         >
                             {category.name}

@@ -90,6 +90,62 @@ GET    /api/inquiries
 - 에러 메시지: 보안상 구체적 원인 노출 금지 (로그인 실패 등)
 - 환경변수: `process.env.XXX` 직접 사용 (서버), `NEXT_PUBLIC_` 접두사 (클라이언트)
 
+## SEO 메타데이터
+
+### 핵심 상수 (`src/constants/seo.ts`)
+
+```typescript
+SEO.siteName     = "finel"
+SEO.siteNameKo   = "파인엘"
+SEO.companyName  = "산업용 공압 부품 전문 기업"
+SEO.baseKeywords = ["finel", "파인엘", "공압 부품", "산업용 부품"]
+```
+
+### 사이트 URL 결정 우선순위 (`src/lib/site-url.ts`)
+
+1. `NEXT_PUBLIC_SITE_URL` 환경변수
+2. `VERCEL_PROJECT_PRODUCTION_URL` (Vercel 자동 주입)
+3. `VERCEL_URL` (Vercel Preview 자동 주입)
+4. fallback: `https://www.finel.co.kr`
+
+### 페이지별 메타데이터 현황
+
+| 페이지 | title | description | OG | 비고 |
+|--------|-------|-------------|-----|------|
+| `/` (메인) | `산업용 공압 부품 전문 기업 \| finel` | finel(파인엘)은 신뢰할 수 있는 산업용 공압 부품... | ✅ `/og-image.png` | canonical `/` |
+| `/about` | `회사 소개 \| finel` | finel(파인엘) 회사 소개 및 파트너 정보 | ✅ (이미지 없음) | canonical `/about` |
+| `/products` | (없음 - `'use client'`) | — | — | 클라이언트 컴포넌트라 metadata 불가 |
+| `/products/[id]` | `{제품명} \| finel` | `{제품명} - {spec}. {description}` (160자 truncate) | ✅ Cloudinary 이미지 | Twitter Card 포함 |
+| `/contact` | (없음 - `'use client'`) | — | — | 클라이언트 컴포넌트라 metadata 불가 |
+
+### 글로벌 메타데이터 (`src/app/layout.tsx`)
+
+- **title template**: `%s | finel` (페이지 title이 siteName으로 감싸짐)
+- **OG 기본 이미지**: `/og-image.png`
+- **locale**: `ko_KR`
+- **검색엔진 인증**: `GOOGLE_SITE_VERIFICATION`, `NAVER_SITE_VERIFICATION` 환경변수로 주입
+- **JSON-LD**: `Organization` 스키마 (전체 공통)
+- **About 페이지 추가 JSON-LD**: `LocalBusiness` 스키마
+
+### robots.txt (`src/app/robots.ts`)
+
+```
+User-agent: *
+Allow: /
+Disallow: /admin, /api
+Sitemap: {siteUrl}/sitemap.xml
+```
+
+### sitemap.xml (`src/app/sitemap.ts`)
+
+정적 경로: `/`, `/about`, `/products`, `/contact`, `/privacy`
+동적 경로: `/products/[id]` (isVisible=true인 제품만, updatedAt 기준)
+
+### SEO 개선 필요 사항
+
+- `/products`, `/contact` 페이지가 `'use client'`라 metadata 설정 불가 → Server Component로 분리 필요
+- `og-image.png` 파일 존재 여부 및 권장 크기(1200×630) 확인 필요
+
 ## Claude Code 에이전트/스킬 사용 원칙
 
 **무조건 먼저 확인하기:**

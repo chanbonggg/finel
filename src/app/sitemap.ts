@@ -20,5 +20,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: product.updatedAt,
   }));
 
-  return [...staticRoutes, ...productRoutes];
+  const categories = await prisma.category.findMany({
+    select: { id: true },
+  });
+
+  const categoryRoutes = categories.map((cat) => ({
+    url: `${siteUrl}/products/category/${cat.id}`,
+    lastModified: new Date(),
+  }));
+
+  return [...staticRoutes, ...productRoutes, ...categoryRoutes];
 }
