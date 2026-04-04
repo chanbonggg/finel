@@ -5,6 +5,7 @@ import QuickMenu from "@/components/QuickMenu";
 import Footer from "@/components/Footer";
 import { getSiteUrl } from "@/lib/site-url";
 import { SEO } from "@/constants/seo";
+// @ts-ignore - CSS 모듈 타입 선언
 import "./globals.css";
 
 const geistSans = Geist({
