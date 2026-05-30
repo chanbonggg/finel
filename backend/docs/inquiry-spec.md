@@ -183,7 +183,7 @@ DB 저장 실패:
   "success": false,
   "errorCode": "DB_WRITE_FAILED",
   "stage": "DB_WRITE",
-  "message": "문의 저장 중 오류가 발생했습니다.",
+  "message": "문의 저장에 실패했습니다.",
   "inquirySaved": false
 }
 ```

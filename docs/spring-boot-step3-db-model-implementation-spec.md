@@ -249,7 +249,16 @@ ddl-auto: create-drop
 
 ID는 `Integer`를 우선 사용한다. Prisma 모델이 `Int`이고 PostgreSQL integer 기반이므로 `Long`으로 넓히는 변경은 3단계에서 하지 않는다.
 
-날짜는 `LocalDateTime`을 우선 사용한다. API 응답 직렬화에서 기존 Next.js 응답과 차이가 생기면 4단계 API 구현 시 포맷을 맞춘다.
+날짜는 DB 매핑에서는 `LocalDateTime`을 우선 사용한다. 단, 기존 Prisma `DateTime` 값은 UTC timestamp로 간주한다.
+
+API 응답 변환 기준:
+
+```text
+Entity LocalDateTime은 응답 DTO에서 ZoneOffset.UTC를 적용해 Instant로 변환한다.
+응답 문자열은 2026-05-27T10:00:00.000Z 형태로 맞춘다.
+서버 JVM 기본 타임존을 사용해 Z를 붙이지 않는다.
+신규 createdAt/updatedAt 생성은 Clock.systemUTC() 또는 동등한 UTC clock 기준으로 수행한다.
+```
 
 ## 도메인별 구현 위치
 
@@ -345,6 +354,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.ZoneOffset;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -621,7 +632,7 @@ public class Product {
 
     @PrePersist
     void prePersist() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.ofInstant(Clock.systemUTC().instant(), ZoneOffset.UTC);
         if (createdAt == null) {
             createdAt = now;
         }
@@ -635,7 +646,7 @@ public class Product {
 
     @PreUpdate
     void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.ofInstant(Clock.systemUTC().instant(), ZoneOffset.UTC);
     }
 }
 ```
@@ -784,6 +795,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.ZoneOffset;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -826,7 +839,7 @@ public class Inquiry {
     @PrePersist
     void prePersist() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.ofInstant(Clock.systemUTC().instant(), ZoneOffset.UTC);
         }
         if (isRead == null) {
             isRead = false;

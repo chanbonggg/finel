@@ -133,16 +133,17 @@ Prisma 모델은 `Admin`, `Category`, `Product`, `Inquiry` 네 가지다.
 ### 인증
 
 - `POST /api/auth/login`
+
   - `username`, `password` 검증
   - `bcryptjs`로 비밀번호 비교
   - `jose` `SignJWT`로 12시간 만료 토큰 발급
   - `auth_token` httpOnly 쿠키 저장
-
 - `src/lib/admin-auth.ts`
+
   - `requireAdmin()`이 `auth_token` 쿠키와 `JWT_SECRET`을 검증한다.
   - 실패 시 JSON 401 또는 500 응답을 반환한다.
-
 - `src/proxy.ts`
+
   - `/admin`은 로그인 페이지를 제외하고 보호한다.
   - `/api/inquiries`는 고객 문의 등록 `POST /api/inquiries`만 공개한다.
   - `/api/products`, `/api/categories`는 `GET`만 공개하고 변경 메서드는 관리자 인증을 요구한다.
@@ -184,33 +185,35 @@ Prisma 모델은 `Admin`, `Category`, `Product`, `Inquiry` 네 가지다.
 ### 관리자 화면
 
 - `src/app/admin/page.tsx`
+
   - 클라이언트 컴포넌트.
   - 문의 내역과 제품 관리 탭을 전환한다.
   - 로그아웃 후 `/admin/login`으로 이동한다.
-
 - `src/app/admin/components/ProductForm.tsx`
+
   - 제품 등록/수정 폼.
   - Cloudinary 이미지 업로드 흐름과 연결된다.
-
 - `src/app/admin/components/ProductTable.tsx`
+
   - 제품 목록 표시 및 수정/삭제 액션.
-
 - `src/app/admin/components/CategoryManager.tsx`
-  - 카테고리 추가/삭제 관리.
 
+  - 카테고리 추가/삭제 관리.
 - `src/app/admin/components/InquiryList.tsx`, `InquiryItem.tsx`
+
   - 문의 목록과 개별 문의 항목 렌더링.
 
 ### 훅
 
 - `useProductAdmin`
+
   - 제품, 카테고리, 이미지 업로드, 제품 등록/수정/삭제, 카테고리 추가/삭제 상태를 한 곳에서 관리한다.
   - Cloudinary 공개 환경 변수 `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`가 필요하다.
-
 - `useInquiry`
-  - 관리자 문의 목록 조회와 삭제를 담당한다.
 
+  - 관리자 문의 목록 조회와 삭제를 담당한다.
 - `useDebounce`
+
   - 검색 입력 디바운싱에 사용된다.
 
 ## 8. 설정 파일
@@ -307,4 +310,3 @@ contact/page.tsx
 
 - `docs/agent.md`: 현재 프로젝트 구조와 에이전트 작업 기준.
 - 새 기능 설계, 장애 기록, 배포 체크리스트도 `docs/` 아래에 추가한다.
-

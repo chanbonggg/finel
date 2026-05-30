@@ -17,6 +17,8 @@
 ```text
 GET /api/products
 GET /api/products?includeHidden=true
+GET /api/products?categoryId=
+GET /api/products/featured?limit=
 GET /api/products/{id}
 GET /api/products/search?q=
 POST /api/products
@@ -187,6 +189,125 @@ includeHidden=true인데 인증이 없으면 401
 includeHidden 값이 없거나 false이면 공개 목록으로 처리
 ```
 
+### GET /api/products?categoryId=
+
+카테고리별 공개 제품 목록이다. Prisma 직접 사용 제거를 위한 정식 API다.
+
+인증:
+
+```text
+필요 없음
+```
+
+정책:
+
+```text
+categoryId 필수
+categoryId에 해당하는 Category가 존재해야 함
+isVisible=true만 조회
+createdAt desc
+category 포함 조회
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+실패:
+
+```text
+400 Bad Request: categoryId 누락 또는 변환 실패
+400 Bad Request: includeHidden=true와 categoryId 동시 사용
+404 Not Found: 카테고리를 찾을 수 없음
+```
+
+응답:
+
+```json
+{
+  "success": true,
+  "products": [
+    {
+      "id": 1,
+      "name": "제품명",
+      "categoryId": 10,
+      "category": "카테고리명",
+      "companyId": 1,
+      "spec": "220V / 60Hz",
+      "description": "제품 설명",
+      "imageUrl": "https://...",
+      "isVisible": true,
+      "createdAt": "2026-05-27T10:00:00.000Z",
+      "updatedAt": "2026-05-27T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+주의:
+
+```text
+카테고리는 존재하지만 제품이 없으면 200 OK와 products=[]를 반환한다.
+includeHidden=true와 categoryId를 같이 보내는 관리자 필터는 이번 계약에서 금지한다.
+```
+
+### GET /api/products/featured?limit=
+
+메인 페이지 최신 공개 제품 목록이다. Prisma 직접 사용 제거를 위한 정식 API다.
+
+인증:
+
+```text
+필요 없음
+```
+
+정책:
+
+```text
+isVisible=true만 조회
+createdAt desc
+limit 기본값 4
+limit 최대값 12
+category 포함 조회
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+실패:
+
+```text
+400 Bad Request: limit 변환 실패
+```
+
+응답:
+
+```json
+{
+  "success": true,
+  "products": [
+    {
+      "id": 1,
+      "name": "제품명",
+      "categoryId": 10,
+      "category": "카테고리명",
+      "companyId": 1,
+      "spec": "220V / 60Hz",
+      "description": "제품 설명",
+      "imageUrl": "https://...",
+      "isVisible": true,
+      "createdAt": "2026-05-27T10:00:00.000Z",
+      "updatedAt": "2026-05-27T10:00:00.000Z"
+    }
+  ]
+}
+```
+
 ### GET /api/products/{id}
 
 제품 상세 조회다.
@@ -201,8 +322,10 @@ includeHidden 값이 없거나 false이면 공개 목록으로 처리
 
 ```text
 공개 호출은 isVisible=true 제품만 조회한다.
-isVisible=false 제품 상세는 관리자 인증이 있을 때만 허용한다.
-기존 프론트에서 숨김 제품 상세 접근이 필요하다고 확인되면 별도 관리자 상세 API 또는 includeHidden 정책을 추가 명세로 작성한다.
+isVisible=false 제품은 공개 상세 API에서 조회하지 않는다.
+숨김 제품 상세가 관리자 화면에서 필요하면 별도 관리자 상세 API를 새로 명세한다.
+이 API는 선택적 인증을 하지 않는다.
+유효하지 않은 auth_token 쿠키가 있어도 공개 visible 조회만 수행하며, 숨김 제품은 404로 처리한다.
 category 포함 조회가 필요하다.
 ```
 
@@ -234,7 +357,6 @@ category 포함 조회가 필요하다.
 실패:
 
 ```text
-401 Unauthorized: 숨김 제품 상세에 관리자 인증 없이 접근
 404 Not Found: 제품을 찾을 수 없습니다.
 ```
 
@@ -380,7 +502,7 @@ updatedAt은 @PreUpdate로 갱신
 ```json
 {
   "success": true,
-  "message": "제품이 성공적으로 수정되었습니다.",
+  "message": "제품 정보가 수정되었습니다.",
   "product": {
     "id": 1,
     "name": "제품명",
@@ -496,10 +618,13 @@ Entity의 LocalDateTime을 그대로 JSON으로 반환하지 않는다.
 
 ```text
 공개/관리자 목록 분기
+카테고리별 공개 제품 목록 조회
+featured 공개 제품 목록 조회
 제품 상세 조회
 검색 q 정규화
 요청 검증
 categoryId 변환
+categoryId와 includeHidden 조합 검증
 CategoryReader로 카테고리 존재 확인
 Product 생성/수정/삭제
 ProductResponse 변환
@@ -527,6 +652,8 @@ Cloudinary 업로드 처리
 ```java
 List<Product> findAllByOrderByCreatedAtDesc();
 List<Product> findByIsVisibleTrueOrderByCreatedAtDesc();
+List<Product> findByCategoryIdAndIsVisibleTrueOrderByCreatedAtDesc(Integer categoryId);
+List<Product> findFeaturedVisibleProducts(Pageable pageable);
 Optional<Product> findWithCategoryById(Integer id);
 List<Product> searchVisibleProducts(String query, Pageable pageable);
 long countByCategoryId(Integer categoryId);
@@ -560,6 +687,8 @@ Repository:
 findByIsVisibleTrueOrderByCreatedAtDesc는 숨김 제품 제외
 findAllByOrderByCreatedAtDesc는 전체 제품 반환
 searchVisibleProducts는 숨김 제품 제외, 최대 10개
+findByCategoryIdAndIsVisibleTrueOrderByCreatedAtDesc는 해당 카테고리의 visible 제품만 반환
+findFeaturedVisibleProducts는 visible 제품을 createdAt desc로 limit만큼 반환
 findWithCategoryById는 category 로딩
 countByCategoryId 동작
 ```
@@ -569,6 +698,10 @@ Service:
 ```text
 공개 목록은 visible만 반환
 includeHidden=true는 관리자일 때만 전체 반환
+categoryId 목록은 없는 카테고리면 404
+categoryId 목록은 카테고리가 있고 제품이 없으면 빈 배열
+categoryId와 includeHidden=true 동시 사용은 400
+featured limit 기본값 4, 최대값 12
 categoryId 문자열 변환
 카테고리 없음 404
 제품 생성 시 isVisible=true
@@ -580,6 +713,10 @@ Controller:
 ```text
 GET /api/products 공개 응답 형태 유지
 GET /api/products?includeHidden=true 인증 없음 401
+GET /api/products?categoryId= 없는 카테고리 404
+GET /api/products?categoryId= 제품 없음 200 + products=[]
+GET /api/products?categoryId=&includeHidden=true 400
+GET /api/products/featured?limit=4 200 + 최대 4개
 POST/PATCH/DELETE 인증 없음 401
 검색 빈 q는 success=true, products=[]
 ```
@@ -593,4 +730,5 @@ ProductResponse의 category는 객체가 아니라 문자열이다.
 ProductResponse의 companyId가 최상위에 포함된다.
 CategoryRepository 직접 참조 없이 구현된다.
 숨김 제품 상세가 공개 호출로 노출되지 않는다.
+GET /api/products/{id}는 선택적 인증을 하지 않는다.
 ```

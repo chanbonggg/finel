@@ -75,13 +75,21 @@ Content-Type: application/json
 
 ### 날짜 직렬화
 
-기존 Next.js API 응답은 날짜를 ISO-8601 문자열로 반환한다.
+기존 Next.js API 응답은 날짜를 UTC 기준 ISO-8601 문자열로 반환한다.
 
 ```text
 2026-05-27T10:00:00.000Z
 ```
 
 Spring 이전 후에도 프론트 호환을 위해 Response DTO에서는 날짜를 문자열로 변환해 이 형태를 맞춘다. Entity의 `LocalDateTime`을 그대로 JSON 직렬화하지 않는다.
+
+날짜/시간 변환 기준:
+
+- PostgreSQL의 기존 Prisma `DateTime` 컬럼은 UTC 시각으로 간주한다.
+- JPA Entity에서는 DB 매핑 안정성을 위해 `LocalDateTime`을 사용할 수 있다.
+- Response DTO 변환 계층에서 `LocalDateTime`에 `ZoneOffset.UTC`를 적용해 `Instant`로 변환한 뒤 `.000Z` 형태 문자열로 직렬화한다.
+- 서버 JVM 기본 타임존을 사용해 `Z`를 붙이지 않는다.
+- 신규 생성/수정 시각은 `Clock.systemUTC()` 또는 동등한 UTC 기준 clock으로 만든다.
 
 ### Spring 환경 변수
 
@@ -140,7 +148,8 @@ Spring에서도 최소한 다음 두 필드는 유지한다.
 - 목록/상세 응답의 `products`, `categories`, `inquiries`, `product` 같은 데이터 필드는 각 도메인 Response DTO에서 명시한다.
 - `ErrorResponse`의 기본 필드는 `success`, `message`다.
 - `errorCode`, `stage`는 문의 등록처럼 프론트가 단계별 실패를 구분해야 하는 API에서만 추가한다.
-- `inquirySaved`는 문의 등록 메일 실패 케이스 전용 필드이며 전역 공통 응답 필드로 승격하지 않는다.
+- `inquirySaved`는 문의 등록 API 전용 필드이며 전역 공통 응답 필드로 승격하지 않는다.
+- 문의 DB 저장 실패에서는 `inquirySaved=false`, 메일 발송 실패에서는 `inquirySaved=true`를 반환한다.
 
 ### 인증 방식
 
@@ -399,14 +408,18 @@ createdAt: LocalDateTime
 | Auth | GET | `/api/auth/verify` | 관리자 | 현재 토큰 검증 |
 | Products | GET | `/api/products` | 공개 | 공개 제품 목록 |
 | Products | GET | `/api/products?includeHidden=true` | 관리자 | 관리자 제품 전체 목록 |
+| Products | GET | `/api/products?categoryId=` | 공개 | 카테고리별 공개 제품 목록 |
+| Products | GET | `/api/products/featured?limit=` | 공개 | 메인 노출용 최신 공개 제품 |
 | Products | POST | `/api/products` | 관리자 | 제품 등록 |
 | Products | GET | `/api/products/{id}` | 공개 | 제품 상세 |
 | Products | PATCH | `/api/products/{id}` | 관리자 | 제품 수정 |
 | Products | DELETE | `/api/products/{id}` | 관리자 | 제품 삭제 |
 | Products | GET | `/api/products/search?q=` | 공개 | 제품 검색 |
 | Categories | GET | `/api/categories?companyId=` | 공개 | 회사별 카테고리 목록 |
+| Categories | GET | `/api/categories/{id}` | 공개 | 카테고리 상세 |
 | Categories | POST | `/api/categories` | 관리자 | 카테고리 등록 |
 | Categories | DELETE | `/api/categories?id=` | 관리자 | 카테고리 삭제 |
+| SEO | GET | `/api/sitemap-data` | 공개 | sitemap 생성용 제품/카테고리 데이터 |
 | Inquiries | GET | `/api/inquiries` | 관리자 | 문의 목록 |
 | Inquiries | POST | `/api/inquiries` | 공개 | 문의 등록 |
 | Inquiries | DELETE | `/api/inquiries/{id}` | 관리자 | 문의 삭제 |
@@ -665,6 +678,16 @@ GET /api/products
 필요 없음
 ```
 
+공개 상세 정책:
+
+```text
+isVisible=true 제품만 조회한다.
+isVisible=false 제품은 존재하더라도 404로 처리한다.
+이 API는 선택적 인증을 하지 않는다.
+관리자 숨김 제품 상세가 필요하면 별도 관리자 API를 새로 명세한다.
+유효하지 않은 auth_token 쿠키가 있어도 무시하고 공개 visible 조회만 수행한다.
+```
+
 DB 조회:
 
 ```text
@@ -728,17 +751,17 @@ Spring DTO 예시:
 
 ```java
 public record ProductResponse(
-    Long id,
+    Integer id,
     String name,
-    Long categoryId,
+    Integer categoryId,
     String category,
     Integer companyId,
     String spec,
     String description,
     String imageUrl,
     Boolean isVisible,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt
+    String createdAt,
+    String updatedAt
 ) {}
 ```
 
@@ -750,6 +773,160 @@ ProductController.getProducts()
 → ProductService.getProducts(includeHidden)
 → includeHidden=true이면 ProductRepository.findAllByOrderByCreatedAtDesc()
 → 기본값이면 ProductRepository.findByIsVisibleTrueOrderByCreatedAtDesc()
+→ ProductResponse로 변환
+```
+
+## 7.1.1 GET `/api/products?categoryId=`
+
+카테고리별 공개 제품 목록 조회 API다. Prisma 직접 사용 제거를 위해 `src/app/products/category/[id]/page.tsx`에서 사용한다.
+
+Request:
+
+```http
+GET /api/products?categoryId=10
+```
+
+인증:
+
+```text
+필요 없음
+```
+
+조회:
+
+```text
+categoryId 필수
+categoryId에 해당하는 Category가 존재해야 함
+isVisible = true만 조회
+createdAt desc 정렬
+Category join 포함
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "products": [
+    {
+      "id": 1,
+      "name": "제품명",
+      "categoryId": 10,
+      "category": "카테고리명",
+      "companyId": 1,
+      "spec": "220V / 60Hz",
+      "description": "제품 설명",
+      "imageUrl": "https://...",
+      "isVisible": true,
+      "createdAt": "2026-05-27T10:00:00.000Z",
+      "updatedAt": "2026-05-27T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+Fail:
+
+```text
+400 Bad Request: categoryId 누락 또는 숫자 변환 실패
+400 Bad Request: includeHidden=true와 categoryId를 함께 사용
+404 Not Found: 카테고리를 찾을 수 없습니다.
+```
+
+주의:
+
+```text
+categoryId에 해당하는 카테고리가 존재하지만 제품이 없으면 200 OK와 빈 products 배열을 반환한다.
+includeHidden=true와 categoryId를 함께 쓰는 관리자 필터는 이번 계약에서 금지한다.
+필요하면 관리자 제품 필터 명세에서 별도 확장한다.
+```
+
+Spring 구현 힌트:
+
+```text
+ProductController.getProducts(categoryId, includeHidden)
+→ categoryId와 includeHidden=true가 함께 있으면 400
+→ CategoryReader.getCategoryForProduct(categoryId)로 카테고리 존재 확인
+→ ProductService.getVisibleProductsByCategory(categoryId)
+→ ProductRepository.findByCategoryIdAndIsVisibleTrueOrderByCreatedAtDesc(categoryId)
+→ ProductResponse로 변환
+```
+
+## 7.1.2 GET `/api/products/featured?limit=`
+
+메인 페이지 최신 공개 제품 조회 API다. Prisma 직접 사용 제거를 위해 `src/app/page.tsx`에서 사용한다.
+
+Request:
+
+```http
+GET /api/products/featured?limit=4
+```
+
+인증:
+
+```text
+필요 없음
+```
+
+조회:
+
+```text
+isVisible = true만 조회
+createdAt desc 정렬
+limit 기본값 4
+limit 최대값 12
+Category join 포함
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "products": [
+    {
+      "id": 1,
+      "name": "제품명",
+      "categoryId": 10,
+      "category": "카테고리명",
+      "companyId": 1,
+      "spec": "220V / 60Hz",
+      "description": "제품 설명",
+      "imageUrl": "https://...",
+      "isVisible": true,
+      "createdAt": "2026-05-27T10:00:00.000Z",
+      "updatedAt": "2026-05-27T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+Fail:
+
+```text
+400 Bad Request: limit 숫자 변환 실패
+```
+
+Spring 구현 힌트:
+
+```text
+ProductController.getFeaturedProducts(limit)
+→ limit 없으면 4
+→ limit > 12이면 12로 clamp
+→ ProductService.getFeaturedProducts(limit)
+→ ProductRepository.findFeaturedVisibleProducts(PageRequest.of(0, limit))
 → ProductResponse로 변환
 ```
 
@@ -842,7 +1019,7 @@ Spring Request DTO 예시:
 ```java
 public record ProductCreateRequest(
     String name,
-    Long categoryId,
+    String categoryId,
     String spec,
     String description,
     String imageUrl
@@ -931,7 +1108,7 @@ Spring 구현 힌트:
 ```text
 ProductController.getProduct(id)
 → ProductService.getProduct(id)
-→ 없으면 404
+→ 없거나 isVisible=false이면 404
 → ProductResponse 반환
 ```
 
@@ -1029,7 +1206,7 @@ Spring Request DTO 예시:
 ```java
 public record ProductUpdateRequest(
     String name,
-    Long categoryId,
+    String categoryId,
     String spec,
     String description,
     String imageUrl,
@@ -1174,7 +1351,7 @@ Spring DTO 예시:
 
 ```java
 public record ProductSearchResponse(
-    Long id,
+    Integer id,
     String name,
     String imageUrl,
     String category
@@ -1275,8 +1452,60 @@ CategoryController.getCategories(companyId)
 - `src/app/products/page.tsx`는 현재 `fetch('/api/categories')`를 호출한다.
 - 그런데 현재 API는 `companyId`가 없으면 400을 반환한다.
 - 이 페이지는 카테고리 API 실패 시 제품 목록에서 카테고리명을 fallback으로 추출한다.
-- Spring 이전 시 기존 동작을 그대로 유지하려면 400을 유지해도 된다.
-- 더 나은 방향은 `companyId`가 없을 때 전체 카테고리를 반환하도록 API를 개선하는 것이다. 단, 이 경우 프론트 동작도 함께 확인해야 한다.
+- 결정: Spring 이전 후에도 400을 유지한다.
+- `GET /api/categories`를 전체 카테고리 조회 API로 확장하지 않는다.
+- `src/app/products/page.tsx`의 무파라미터 호출은 제거하고, 전체 카테고리 UI가 필요하면 `GET /api/products` 응답의 `category/companyId`에서 그룹을 만든다.
+
+## 8.1.1 GET `/api/categories/{id}`
+
+카테고리 상세 조회 API다. Prisma 직접 사용 제거를 위해 `src/app/products/category/[id]/page.tsx`의 metadata와 화면 제목에서 사용한다.
+
+Request:
+
+```http
+GET /api/categories/10
+```
+
+인증:
+
+```text
+필요 없음
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "category": {
+    "id": 10,
+    "name": "카테고리명",
+    "companyId": 1
+  }
+}
+```
+
+Fail:
+
+```text
+400 Bad Request: id 숫자 변환 실패
+404 Not Found: 카테고리를 찾을 수 없습니다.
+```
+
+Spring 구현 힌트:
+
+```text
+CategoryController.getCategory(id)
+→ CategoryService.getCategory(id)
+→ CategoryRepository.findById(id)
+→ CategoryResponse로 변환
+```
 
 ## 8.2 POST `/api/categories`
 
@@ -1321,12 +1550,21 @@ Success response:
 ```json
 {
   "success": true,
+  "message": "카테고리가 추가되었습니다.",
   "category": {
     "id": 10,
     "name": "새 카테고리",
     "companyId": 1
   }
 }
+```
+
+호환성:
+
+```text
+현재 Next.js API는 success와 category만 반환하고 message가 없을 수 있다.
+Spring 전환 후에는 사용자 피드백 일관성을 위해 message를 추가한다.
+프론트가 message에 의존하지 않더라도 Spring API 계약은 위 형태로 고정한다.
 ```
 
 Validation fail:
@@ -1606,8 +1844,16 @@ DB 저장 실패:
   "success": false,
   "errorCode": "DB_WRITE_FAILED",
   "stage": "DB_WRITE",
-  "message": "문의 저장에 실패했습니다."
+  "message": "문의 저장에 실패했습니다.",
+  "inquirySaved": false
 }
+```
+
+정책:
+
+```text
+DB 저장 실패는 문의가 저장되지 않은 상태이므로 inquirySaved=false를 명시한다.
+메일 발송 실패는 문의가 저장된 상태이므로 inquirySaved=true를 명시한다.
 ```
 
 메일 발송 실패:
@@ -1777,7 +2023,76 @@ InquiryController.deleteInquiry(id)
 
 - 존재하지 않는 ID는 404로 반환하는 것이 좋다.
 
-## 10. 관리자 보호 규칙
+## 10. SEO/정적 데이터 API
+
+## 10.1 GET `/api/sitemap-data`
+
+Next.js `src/app/sitemap.ts`가 Prisma 없이 sitemap URL을 생성하기 위한 공개 meta API다. 백엔드 도메인 명세는 `backend/docs/public-meta-spec.md`를 따른다.
+
+Request:
+
+```http
+GET /api/sitemap-data
+```
+
+인증:
+
+```text
+필요 없음
+```
+
+조회:
+
+```text
+isVisible = true 제품만 포함
+카테고리 전체 포함
+제품 updatedAt 포함
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "products": [
+    {
+      "id": 1,
+      "updatedAt": "2026-05-27T10:00:00.000Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": 10
+    }
+  ]
+}
+```
+
+주의:
+
+```text
+이 API는 화면 표시용 상세 데이터를 반환하지 않는다.
+sitemap 생성에 필요한 최소 필드만 반환한다.
+숨김 제품은 sitemap에 포함하지 않는다.
+```
+
+Spring 구현 힌트:
+
+```text
+PublicMetaController.getSitemapData()
+→ PublicMetaService.getSitemapData()
+→ ProductRepository.findVisibleSitemapItems()
+→ CategoryRepository.findAllCategorySitemapItems()
+→ SitemapDataResponse로 변환
+```
+
+## 11. 관리자 보호 규칙
 
 현재 `src/proxy.ts` 기준 보호 규칙:
 
@@ -1811,6 +2126,25 @@ POST   /api/inquiries             공개
 DELETE /api/inquiries/{id}        관리자
 ```
 
+Spring 인증 전환 후 `/admin` 페이지 보호 결정:
+
+```text
+Next.js는 JWT를 직접 검증하지 않는다.
+src/proxy.ts는 auth_token 쿠키를 Spring GET /api/auth/verify로 전달해 200/401만 판단한다.
+verify 성공이면 /admin 접근 허용.
+verify 실패이면 /admin/login으로 redirect하고 auth_token 삭제.
+src/lib/admin-auth.ts의 JWT_SECRET 기반 검증은 Spring 전환 완료 후 제거한다.
+Next.js 런타임에 JWT_SECRET을 필수로 두지 않는다.
+```
+
+주의:
+
+```text
+/admin 페이지 guard는 UX 보호다.
+보안의 최종 경계는 Spring 관리자 API의 401 응답이다.
+프론트 guard가 있어도 Spring 관리자 API 보호를 생략하지 않는다.
+```
+
 Spring Security에서는 다음처럼 생각하면 된다.
 
 ```text
@@ -1818,9 +2152,12 @@ permitAll:
   POST /api/auth/login
   GET  /api/auth/logout
   GET  /api/products
-  GET  /api/products/*
   GET  /api/products/search
+  GET  /api/products/featured
+  GET  /api/products/*
   GET  /api/categories
+  GET  /api/categories/*
+  GET  /api/sitemap-data
   POST /api/inquiries
 
 authenticated admin:
@@ -1839,7 +2176,7 @@ authenticated admin:
 - `/api/products/search`가 `/api/products/{id}`보다 먼저 매칭되어야 한다.
 - Spring MVC에서는 명확한 mapping이면 큰 문제는 없지만, 보안 matcher 작성 시 순서를 조심한다.
 
-## 11. 프론트 호출 위치 정리
+## 12. 프론트 호출 위치 정리
 
 Spring 이전 시 아래 API 호출 파일들을 수정하게 된다.
 
@@ -1889,7 +2226,7 @@ src/app/sitemap.ts
 ```text
 src/app/page.tsx
   - 현재: 최신 공개 제품 4개를 Prisma로 조회
-  - 전환: GET /api/products를 호출해 프론트에서 4개만 사용하거나, GET /api/products/featured?limit=4 추가
+  - 전환: GET /api/products/featured?limit=4 사용
 
 src/app/products/[id]/page.tsx
   - 현재: 제품 상세와 SEO metadata를 Prisma로 조회
@@ -1897,18 +2234,19 @@ src/app/products/[id]/page.tsx
 
 src/app/products/category/[id]/page.tsx
   - 현재: 카테고리와 해당 공개 제품 목록을 Prisma로 조회
-  - 전환: GET /api/categories/{id} 추가 권장
+  - 전환: GET /api/categories/{id} + GET /api/products?categoryId={id} 사용
 
 src/app/sitemap.ts
   - 현재: 제품/카테고리 URL 생성을 Prisma로 조회
-  - 전환: sitemap 전용 공개 API를 추가하거나, Spring에서 sitemap을 생성하는 구조로 분리
+  - 전환: GET /api/sitemap-data 사용
 ```
 
-추가 API가 필요한 경우 최소 후보:
+Prisma 제거용 정식 추가 API:
 
 ```text
 GET /api/categories/{id}
 GET /api/products/featured?limit=4
+GET /api/products?categoryId={id}
 GET /api/sitemap-data
 ```
 
@@ -1928,13 +2266,16 @@ src/lib/api/inquiries.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 
 export async function apiFetch(path: string, init?: RequestInit) {
+  const headers = new Headers(init?.headers);
+
+  if (init?.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   return fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
+    headers,
   });
 }
 ```
@@ -1944,8 +2285,17 @@ export async function apiFetch(path: string, init?: RequestInit) {
 - Cloudinary 업로드는 백엔드 API가 아니라 외부 API다.
 - `https://api.cloudinary.com/v1_1/.../image/upload` 호출은 Spring 이전 대상이 아니다.
 - 나중에 보안을 강화하려면 Spring에서 signed upload를 발급하는 구조로 바꿀 수 있다.
+- GET/HEAD 요청에는 기본 `Content-Type`을 붙이지 않는다.
+- JSON body가 있는 요청에만 `Content-Type: application/json`을 붙인다.
 
-## 12. Spring 구현 순서
+## 13. Spring 구현 순서
+
+주의:
+
+```text
+전체 실행 순서의 master sequence는 docs/migration-runbook.md를 따른다.
+아래 순서는 API 계약 문서 작성 당시의 백엔드 구현 관점 요약인 legacy rough sequence이며, 실행 단계 번호로 사용하지 않는다.
+```
 
 처음 구현할 때는 아래 순서가 가장 쉽다.
 
@@ -2058,7 +2408,7 @@ DELETE /api/inquiries/{id}
 
 인증 필터가 안정된 다음 구현한다.
 
-## 13. 테스트 체크리스트
+## 14. 테스트 체크리스트
 
 Spring API를 만든 뒤 Postman, curl, 또는 IntelliJ HTTP Client로 아래를 확인한다.
 
@@ -2115,7 +2465,7 @@ DELETE /api/inquiries/1
 - 카테고리에 제품이 있으면 삭제가 막히는가
 - 삭제 후 목록 조회에서 사라지는가
 
-## 14. 현재 발견된 주의사항
+## 15. 현재 발견된 주의사항
 
 ### `/api/categories` 파라미터 없는 호출
 
@@ -2136,6 +2486,16 @@ Spring 이전 때 선택지:
 3. 프론트에서 회사 선택 후에만 `companyId`를 붙여 호출하도록 수정한다.
 
 초기 이전에서는 1번이 가장 변경이 적다.
+
+결정:
+
+```text
+1번으로 확정한다.
+GET /api/categories 무파라미터 호출은 400 Bad Request를 유지한다.
+전체 카테고리 조회로 확장하지 않는다.
+src/app/products/page.tsx의 무파라미터 호출은 Spring 전환 시 제거한다.
+제품 페이지에서 전체 카테고리 UI가 필요하면 GET /api/products 응답의 category/companyId를 기반으로 프론트에서 그룹을 만든다.
+```
 
 ### Product update 응답 불일치
 
@@ -2173,9 +2533,9 @@ Spring 이전 범위에는 포함하지 않는다.
 PATCH /api/inquiries/{id}/read
 ```
 
-## 15. 1단계 완료 기준
+## 16. API 계약 정리 완료 기준
 
-이 문서를 기준으로 다음 질문에 답할 수 있으면 1단계는 완료다.
+이 문서를 기준으로 다음 질문에 답할 수 있으면 API 계약 정리는 완료다.
 
 - 어떤 API가 있는가
 - 어떤 API가 관리자 인증을 요구하는가

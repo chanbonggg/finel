@@ -286,7 +286,15 @@ Database: Neon PostgreSQL
 
 운영 DB를 공유하고 있다면 마이그레이션 명령은 특히 조심해야 한다.
 
-## 권장 진행 순서
+## Legacy Rough Sequence
+
+주의:
+
+```text
+아래 단계표는 초기 러프 플랜이다.
+현재 전체 실행 순서의 master sequence는 docs/migration-runbook.md를 따른다.
+이 섹션의 번호를 실제 실행 단계 번호로 사용하지 않는다.
+```
 
 ### 1단계: API 명세 정리
 

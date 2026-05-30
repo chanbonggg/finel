@@ -14,6 +14,7 @@
 
 ```text
 GET /api/categories?companyId=
+GET /api/categories/{id}
 POST /api/categories
 DELETE /api/categories?id=
 Category Entity/Repository 사용
@@ -89,6 +90,14 @@ Integer 변환 가능해야 함
 companyId 없는 호출은 400 Bad Request 유지
 ```
 
+결정:
+
+```text
+GET /api/categories를 전체 카테고리 조회 API로 확장하지 않는다.
+전체 카테고리 조회가 필요하면 별도 API를 새로 명세한다.
+현재 전환 범위에서는 프론트의 무파라미터 호출을 제거한다.
+```
+
 Response:
 
 ```json
@@ -120,6 +129,56 @@ Failure:
 
 ```text
 400 Bad Request: companyId 누락 또는 변환 실패
+```
+
+### GET /api/categories/{id}
+
+카테고리 상세 조회 API다. Prisma 직접 사용 제거를 위한 정식 API다.
+
+인증:
+
+```text
+필요 없음
+```
+
+Request:
+
+```http
+GET /api/categories/10
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "category": {
+    "id": 10,
+    "name": "카테고리명",
+    "companyId": 1
+  }
+}
+```
+
+실패:
+
+```text
+400 Bad Request: id 변환 실패
+404 Not Found: 카테고리를 찾을 수 없음
+```
+
+사용처:
+
+```text
+src/app/products/category/[id]/page.tsx
+카테고리 페이지 metadata 생성
+카테고리 페이지 제목/설명 표시
 ```
 
 ### POST /api/categories
@@ -164,6 +223,14 @@ name + companyId 중복 금지
     "companyId": 1
   }
 }
+```
+
+호환성:
+
+```text
+현재 Next.js API는 success와 category만 반환하고 message가 없을 수 있다.
+Spring 전환 후에는 사용자 피드백 일관성을 위해 message를 추가한다.
+프론트가 message에 의존하지 않더라도 응답 계약은 위 형태로 고정한다.
 ```
 
 중복:
@@ -271,6 +338,7 @@ public record CategoryResponse(
 ```text
 companyId 검증
 카테고리 목록 조회
+id 기준 카테고리 상세 조회
 name trim
 중복 확인
 카테고리 생성
@@ -324,6 +392,8 @@ Repository:
 companyId 기준 name asc 조회
 existsByNameAndCompanyId 동작
 unique 제약과 Entity 매핑 확인
+findById는 존재하는 카테고리를 반환
+findById는 없는 카테고리 Optional.empty 반환
 ```
 
 Service:
@@ -332,6 +402,8 @@ Service:
 companyId 누락 400
 name blank 400
 중복 생성 409
+카테고리 상세 조회 성공
+없는 카테고리 상세 조회 404
 제품 연결 카테고리 삭제 400
 제품 미연결 카테고리 삭제 성공
 ```
@@ -340,6 +412,8 @@ Controller:
 
 ```text
 GET /api/categories?companyId=1 응답 형태 유지
+GET /api/categories/{id} 응답 형태 유지
+GET /api/categories/{id} 없는 id 404
 POST /api/categories 인증 없음 401
 DELETE /api/categories?id= 인증 없음 401
 ```
