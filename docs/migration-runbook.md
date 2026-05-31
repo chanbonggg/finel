@@ -40,7 +40,7 @@ API path와 response shape을 최대한 유지한다.
 ```text
 docs/spring-boot-step2-skeleton-spec.md: master sequence 시작 전 준비 산출물
 docs/spring-boot-step3-db-model-implementation-spec.md: master sequence 1단계 시작 조건
-docs/admin-bootstrap-spec.md: master sequence 7~8단계 전 완료 필요
+docs/admin-bootstrap-spec.md: master sequence 3~4단계 전 완료 필요
 docs/e2e-verification-spec.md: master sequence 10단계 완료 판정 기준
 ```
 
@@ -222,6 +222,13 @@ Spring 관리자 API만 배포 제외 또는 route 차단
 권한 없는 요청이 모두 차단된다.
 ```
 
+선행 확보 권장:
+
+```text
+docs/admin-bootstrap-spec.md 기준 관리자 계정 bootstrap 절차가 이미 준비되어 있어야 한다.
+bootstrap 후 POST /api/auth/login 성공 검증이 가능해야 한다.
+```
+
 ## 5단계: Next.js 공개 화면 Spring API 연결
 
 시작 조건:
@@ -320,6 +327,7 @@ Spring 관리자 API 배포는 유지 가능
 Next.js API 호출 전환 완료
 직접 Prisma 대체 API 확정
 docs/admin-bootstrap-spec.md 기준 관리자 계정 bootstrap 절차 확정
+Prisma 제거용 추가 API 확정
 ```
 
 작업 범위:
@@ -329,6 +337,22 @@ src/app/page.tsx
 src/app/products/[id]/page.tsx
 src/app/products/category/[id]/page.tsx
 src/app/sitemap.ts
+```
+
+Prisma 제거용 추가 API:
+
+```text
+GET /api/products/featured?limit=4
+GET /api/categories/{id}
+GET /api/products?categoryId=
+GET /api/sitemap-data
+```
+
+주의:
+
+```text
+이 API들은 Next.js의 Prisma 직접 사용을 제거하기 위한 정식 계약이다.
+기존 공개 목록/상세/검색/카테고리 API와 충돌하지 않도록 별도 추가 계약으로 관리한다.
 ```
 
 검증:

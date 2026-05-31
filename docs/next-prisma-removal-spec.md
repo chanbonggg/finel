@@ -191,6 +191,7 @@ Next.js sitemap.ts가 DB 없이 URL 목록을 만들 수 있게 한다.
 Spring Auth/Product/Category/Inquiry/Mail API 구현 완료
 프론트 API 호출이 Spring API를 바라봄
 관리자 인증이 Spring 쿠키로 동작
+docs/admin-bootstrap-spec.md 기준 관리자 계정 bootstrap 절차 준비 완료
 ```
 
 이 단계에서는 아직 Prisma 파일을 삭제하지 않는다.
