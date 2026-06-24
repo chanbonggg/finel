@@ -7,7 +7,7 @@ export default function PrivacyPolicyPage() {
                 <h1 className="text-3xl font-extrabold mb-8">개인정보처리방침</h1>
 
                 <p className="lead border-l-4 border-blue-500 pl-4 bg-gray-50 py-4">
-                    Finel(이하 '회사')은 이용자의 개인정보를 소중하게 생각하며, 개인정보보호법 등 관련 법령을 준수하기 위해 최선을 다하고 있습니다. 본 방침을 통해 제공하시는 개인정보가 어떻게 이용되고 보호되는지 안내해 드립니다.
+                    Finel(이하 &apos;회사&apos;)은 이용자의 개인정보를 소중하게 생각하며, 개인정보보호법 등 관련 법령을 준수하기 위해 최선을 다하고 있습니다. 본 방침을 통해 제공하시는 개인정보가 어떻게 이용되고 보호되는지 안내해 드립니다.
                 </p>
 
                 <h2>1. 개인정보의 처리 목적</h2>

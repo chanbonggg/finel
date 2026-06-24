@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma"; // 👈 DB 직접 접속을 위해 추가
-import { getSiteUrl } from "@/lib/site-url";
+import { getFeaturedProducts } from "@/lib/api/products";
 import { SEO } from "@/constants/seo";
 import PhoneButton from "@/components/PhoneButton";
 
@@ -26,16 +25,11 @@ export const metadata: Metadata = {
 export default async function Home() {
 
   // 1. DB에서 최신 제품 4개 가져오기
-  const products = await prisma.product.findMany({
-    where: { isVisible: true }, // (선택) 관리자가 숨김 처리하지 않은 것만
-    take: 4,                    // 4개만 가져오기
-    orderBy: { id: 'desc' },    // 최신순 정렬
-    include: { category: true },
-  });
+  const products = await getFeaturedProducts(4);
 
   const formattedProducts = products.map((product) => ({
     ...product,
-    categoryName: product.category?.name ?? '',
+    categoryName: product.category,
   }));
 
   // 디자인용 배경색 배열 (DB에 색상 정보가 없으므로 순서대로 적용)

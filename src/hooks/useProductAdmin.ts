@@ -1,4 +1,6 @@
 import { useState, useEffect, ChangeEvent, useRef } from 'react';
+import { createCategory, deleteCategory, getCategories } from '@/lib/api/categories';
+import { createProduct, deleteProduct, getProducts, updateProduct } from '@/lib/api/products';
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
@@ -8,6 +10,7 @@ export interface Product {
     name: string;
     category: string;
     categoryId: number;
+    companyId: number;
     spec: string;
     description: string;
     imageUrl?: string;
@@ -63,9 +66,7 @@ export function useProductAdmin() {
     const fetchProducts = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/products');
-            const data = await res.json();
-            if (data.success) setProducts(data.products);
+            setProducts(await getProducts({ includeHidden: true }));
         } catch (error) {
             console.error("제품 로딩 실패:", error);
         } finally {
@@ -75,9 +76,7 @@ export function useProductAdmin() {
 
     const fetchCategories = async (companyId: number) => {
         try {
-            const res = await fetch(`/api/categories?companyId=${companyId}`);
-            const data = await res.json();
-            if (data.success) setCategories(data.categories);
+            setCategories(await getCategories(companyId));
         } catch (error) {
             console.error("카테고리 로딩 실패:", error);
         }
@@ -124,11 +123,7 @@ export function useProductAdmin() {
         }
 
         try {
-            const res = await fetch('/api/categories', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newCategoryName, companyId: selectedCompanyId })
-            });
+            const res = await createCategory({ name: newCategoryName, companyId: selectedCompanyId });
 
             const data = await res.json();
 
@@ -150,9 +145,7 @@ export function useProductAdmin() {
         if (!confirm("이 카테고리를 삭제하시겠습니까?")) return;
 
         try {
-            const res = await fetch(`/api/categories?id=${id}`, {
-                method: 'DELETE',
-            });
+            const res = await deleteCategory(id);
             const data = await res.json();
 
             if (data.success) {
@@ -187,11 +180,7 @@ export function useProductAdmin() {
                     categoryId: newProduct.categoryId ? Number(newProduct.categoryId) : undefined,
                     ...(imageUrl ? { imageUrl } : {}),
                 };
-                const res = await fetch(`/api/products/${editingProductId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatePayload),
-                });
+                const res = await updateProduct(editingProductId, updatePayload);
                 const data = await res.json();
                 if (data.success) {
                     alert("제품 수정 완료!");
@@ -203,11 +192,7 @@ export function useProductAdmin() {
                 }
             } else {
                 // 추가 모드
-                const res = await fetch('/api/products', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newProduct),
-                });
+                const res = await createProduct(newProduct);
                 const data = await res.json();
 
                 if (data.success) {
@@ -228,10 +213,8 @@ export function useProductAdmin() {
     // --- 제품 수정 모드 진입 ---
     const handleEditProduct = async (productId: number) => {
         try {
-            const res = await fetch(`/api/products/${productId}`);
-            const data = await res.json();
-            if (data.success) {
-                const product = data.product;
+            const product = products.find(item => item.id === productId);
+            if (product) {
                 setEditingProductId(productId);
                 setSelectedCompanyId(product.companyId);
                 setTimeout(() => {
@@ -260,9 +243,7 @@ export function useProductAdmin() {
     // --- 제품 삭제 ---
     const handleDelete = async (id: number) => {
         if (!confirm("삭제하시겠습니까?")) return;
-        await fetch(`/api/products/${id}`, {
-            method: 'DELETE',
-        });
+        await deleteProduct(id);
         setProducts(prev => prev.filter(p => p.id !== id));
     };
 

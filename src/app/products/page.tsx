@@ -4,12 +4,14 @@ import { useState, useEffect, useMemo } from 'react'; // React 기능 가져오�
 import Link from "next/link";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PARTNERS } from '@/constants/partners';
+import { getProducts } from '@/lib/api/products';
 
 // 제품 데이터 타입 정의 (DB랑 맞춰줍니다)
 interface Product {
     id: number;
     name: string;
     category: string;
+    categoryId: number;
     companyId: number; // API에서 추가된 필드
     spec: string;
     description: string;
@@ -39,19 +41,11 @@ export default function ProductsPage() {
     useEffect(() => {
         async function fetchProductsAndCategories() {
             try {
-                const [productsRes, categoriesRes] = await Promise.all([
-                    fetch('/api/products'),
-                    fetch('/api/categories'),
-                ]);
-                const productsData = await productsRes.json();
-                const categoriesData = await categoriesRes.json();
-
-                if (productsData.success) {
-                    setProducts(productsData.products); // 성공하면 통에 데이터 채우기
-                }
-                if (categoriesData.success) {
-                    setCategories(categoriesData.categories);
-                }
+                const productList = await getProducts();
+                setProducts(productList);
+                setCategories(Array.from(new Map(productList.map(product => [product.categoryId, {
+                    id: product.categoryId, name: product.category, companyId: product.companyId,
+                }])).values()));
             } catch (error) {
                 console.error("제품 불러오기 실패:", error);
             } finally {

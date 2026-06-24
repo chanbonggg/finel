@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { prisma } from "@/lib/prisma";
+import { getCategory as fetchCategory } from "@/lib/api/categories";
+import { getProducts } from "@/lib/api/products";
 import { SEO } from "@/constants/seo";
 
 type PageProps = {
@@ -16,15 +17,9 @@ const getCategory = cache(async function getCategory(id: string) {
         return null;
     }
 
-    return prisma.category.findUnique({
-        where: { id: categoryId },
-        include: {
-            products: {
-                where: { isVisible: true },
-                orderBy: { id: "desc" },
-            },
-        },
-    });
+    const category = await fetchCategory(categoryId);
+    if (!category) return null;
+    return { ...category, products: await getProducts({ categoryId }) };
 });
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import InquiryTab from '@/app/admin/InquiryTap'
 import ProductTab from '@/app/admin/ProductTap';
+import { logout } from '@/lib/api/auth';
 
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState("inquiry");
@@ -11,7 +12,7 @@ export default function AdminPage() {
 
     const handleLogout = async () => {
         try {
-            await fetch('/api/auth/logout');
+            await logout();
         } catch {
             // 실패해도 로그인 페이지로 이동
         } finally {

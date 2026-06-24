@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { prisma } from "@/lib/prisma";
+import { getProduct as fetchProduct } from "@/lib/api/products";
 import { getSiteUrl } from "@/lib/site-url";
 import { SEO } from "@/constants/seo";
 
@@ -21,22 +21,7 @@ const getProduct = cache(async function getProduct(id: string) {
     return null;
   }
 
-  return prisma.product.findUnique({
-    where: { id: productId },
-    select: {
-      id: true,
-      name: true,
-      spec: true,
-      description: true,
-      imageUrl: true,
-      isVisible: true,
-      category: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  });
+  return fetchProduct(productId);
 });
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -56,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ...SEO.baseKeywords,
     product.name,
     product.spec,
-    product.category.name,
+    product.category,
   ];
 
   return {
@@ -99,7 +84,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     name: product.name,
     description: product.description,
     image: product.imageUrl || undefined,
-    category: product.category.name,
+    category: product.category,
     url: `${siteUrl}/products/${product.id}`,
     brand: {
       "@type": "Organization",

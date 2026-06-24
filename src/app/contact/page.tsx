@@ -3,6 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import PhoneButton from '@/components/PhoneButton';
 import { useSearchParams } from 'next/navigation';
+import { getProducts } from '@/lib/api/products';
+import { createInquiry } from '@/lib/api/inquiries';
 
 // DB에서 받아올 제품 데이터 타입 정의
 interface Product {
@@ -35,11 +37,7 @@ function ContactContent() {
     useEffect(() => {
         async function fetchProducts() {
             try {
-                const res = await fetch('/api/products');
-                const data = await res.json();
-                if (data.success) {
-                    setDbProducts(data.products); // 가져온 목록을 통에 담음
-                }
+                setDbProducts(await getProducts());
             } catch (error) {
                 console.error("제품 목록 로딩 실패:", error);
             }
@@ -86,18 +84,14 @@ function ContactContent() {
         try {
             //const combinedContent = `[관심제품: ${formData.product}]\n[회사명: ${formData.company}]\n\n문의내용:\n${formData.message}`;
 
-            const res = await fetch('/api/inquiries', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const res = await createInquiry({
                     name: formData.name,
                     email: formData.email,
                     phone: formData.phone,
                     product: formData.product,
                     company: formData.company,
                     content: formData.message,
-                }),
-            });
+                });
 
             const data = await res.json();
 

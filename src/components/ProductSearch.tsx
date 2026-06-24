@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDebounce } from '@/hooks/useDebounce';
 import { translateSearchQuery } from '@/lib/searchKeywordMap';
+import { searchProducts } from '@/lib/api/products';
 
 interface SearchResult {
     id: number;
@@ -38,17 +39,7 @@ export default function ProductSearch() {
         const fetchResults = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`/api/products/search?q=${encodeURIComponent(translatedQuery)}`, {
-                    signal: controller.signal,
-                });
-                if (!res.ok) {
-                    console.error('검색 API 오류:', res.status);
-                    return;
-                }
-                const data = await res.json();
-                if (data.success) {
-                    setResults(data.products);
-                }
+                setResults(await searchProducts(translatedQuery, controller.signal));
             } catch (error) {
                 if (error instanceof DOMException && error.name === 'AbortError') return;
                 console.error('검색 실패:', error);

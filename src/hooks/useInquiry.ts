@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Inquiry } from '@/types/inquiry';
+import { deleteInquiry, getInquiries } from '@/lib/api/inquiries';
 
 export function useInquiry() {
     const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -10,11 +11,7 @@ export function useInquiry() {
     const fetchInquiries = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/inquiries');
-            const data = await res.json();
-            if (data.success) {
-                setInquiries(data.inquiries);
-            }
+            setInquiries(await getInquiries<Inquiry>());
         } catch (error) {
             console.error("문의 로딩 실패:", error);
         } finally {
@@ -30,9 +27,7 @@ export function useInquiry() {
         if (!confirm("정말 이 문의 내역을 삭제하시겠습니까?")) return;
 
         try {
-            const res = await fetch(`/api/inquiries/${id}`, {
-                method: 'DELETE',
-            });
+            const res = await deleteInquiry(id);
             const data = await res.json();
             if (res.ok && data.success) {
                 alert("삭제되었습니다.");

@@ -53,7 +53,7 @@ export default function AboutPage() {
             <section className="text-center">
                 <h1 className="text-4xl font-bold mb-6">About Us</h1>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                    "우리는 기술로 더 나은 세상을 만듭니다."<br />
+                    &quot;우리는 기술로 더 나은 세상을 만듭니다.&quot;<br />
                     고객의 신뢰를 최우선으로 생각하며, 끊임없는 혁신을 통해 최고의 가치를 제공합니다.
                 </p>
             </section>

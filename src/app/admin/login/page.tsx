@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { login } from '@/lib/api/auth';
 
 export default function AdminLoginPage() {
     const [username, setUsername] = useState('');
@@ -13,12 +14,7 @@ export default function AdminLoginPage() {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-            });
-            const data = await res.json();
+            const { response: res, data } = await login(username, password);
 
             if (res.ok && data.success) {
                 router.replace('/admin');
