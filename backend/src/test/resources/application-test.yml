@@ -1,0 +1,13 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+app:
+  auth:
+    jwt-secret: test-only-secret-that-is-at-least-32-bytes-long
+    secure-cookie: false
+  mail:
+    from: test@example.com
+    to: admin@example.com

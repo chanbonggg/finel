@@ -47,3 +47,9 @@ PROJECT_STATUS.md
 .claude/
 .claude.json
 MEMORY.md
+
+# IntelliJ IDEA
+/.idea/
+
+# Temporary Spring Initializr project
+/backend_init/

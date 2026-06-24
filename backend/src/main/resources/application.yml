@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: backend
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  jackson:
+    time-zone: UTC
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+  flyway:
+    clean-disabled: true
+    baseline-on-migrate: false
+
+server:
+  port: 8080
+
+app:
+  cors:
+    allowed-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
+  auth:
+    jwt-secret: ${JWT_SECRET:}
+    secure-cookie: ${AUTH_COOKIE_SECURE:false}
+    cookie-domain: ${AUTH_COOKIE_DOMAIN:}
+  mail:
+    from: ${MAIL_FROM:${MAIL_USERNAME:}}
+    to: ${MAIL_TO:}
+  admin-bootstrap:
+    enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}
