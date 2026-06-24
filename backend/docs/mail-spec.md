@@ -182,9 +182,11 @@ MailSendException
 InquiryService 처리:
 
 ```text
-MailSendException 발생 시 문의 저장은 유지
+InquiryPersistenceService의 저장 transaction commit 후 MailService 호출
+MailSendException 발생 시 이미 commit된 문의 저장은 유지
 응답은 502 Bad Gateway + MAIL_SEND_FAILED
 inquirySaved=true
+SMTP 내부 상세는 공개 응답에서 제외
 ```
 
 로그 기준:
@@ -193,6 +195,14 @@ inquirySaved=true
 메일 실패 시 inquiryId, exception class, message 기록
 MAIL_PASSWORD, SMTP 인증 정보 기록 금지
 문의 content 전문은 debug에서도 기록하지 않음
+```
+
+트랜잭션 금지:
+
+```text
+MailService에 @Transactional 지정
+DB transaction을 유지한 채 SMTP 호출
+MailSendException으로 저장 transaction rollback
 ```
 
 ## 테스트 기준
@@ -211,6 +221,8 @@ Inquiry 연동 테스트:
 ```text
 MailService 성공 시 201 + DONE + mailSent=true + inquiry 객체 반환
 MailService 실패 시 502 + MAIL_SEND_FAILED + inquirySaved=true
+MailService 실패 응답에 SMTP exception 상세 없음
+MailService 실패 후 DB 재조회 시 문의 존재
 DB 저장 실패 시 MailService 호출하지 않음
 ```
 

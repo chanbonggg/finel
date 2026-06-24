@@ -6,7 +6,7 @@
 
 현재 `finel` 프로젝트는 Next.js 안에 화면과 API가 함께 있는 구조다.
 
-이번 리팩토링의 목표는 전체 구조를 천천히 정리하면서 백엔드 API를 Spring Boot로 분리하고, Next.js는 프론트엔드 역할에 집중하도록 바꾸는 것이다.
+이번 리팩토링의 목표는 전체 구조를 천천히 정리하면서 백엔드 API를 Spring Boot로 분리하고, Next.js는 프론트엔드 역할에 집중하도록 바꾸는 것이다. 선택지 최종 결정은 `docs/spring-migration-decisions.md`를 따른다.
 
 ## 현재 구조 요약
 
@@ -249,7 +249,7 @@ src/lib/api/
 - 쿠키 정책은 환경별로 나눈다.
 - 로컬은 `SameSite=Lax`, `Secure=false`, Domain 미설정으로 둔다.
 - 운영 same-site 배포는 `SameSite=Lax`, `Secure=true`를 쓴다.
-- 운영 cross-site 배포는 `SameSite=None`, `Secure=true`, credentials CORS를 함께 쓴다.
+- 운영은 same-site custom domain 또는 same-origin reverse proxy를 사용한다. cross-site cookie 인증은 지원하지 않는다.
 - `SameSite=Strict`는 프론트/백엔드가 다른 site일 때 관리자 인증을 깨뜨릴 수 있으므로 기본값으로 쓰지 않는다.
 
 ### 2. Bearer Token 방식
@@ -310,7 +310,7 @@ docs/api-contract.md
 
 ### 2단계: Spring Boot 뼈대 생성
 
-- Java 21 또는 17 결정
+- Java 21 LTS, Spring Boot 3.5.15, Gradle Wrapper 8.14.5 사용
 - Spring Web
 - Spring Data JPA
 - Spring Security
@@ -401,6 +401,8 @@ prisma/
 ## 리스크
 
 - Next.js와 Spring의 쿠키/CORS 설정이 맞지 않으면 관리자 인증이 깨질 수 있다.
+- 쿠키 인증인데 CSRF 보호를 누락하면 관리자 변경 API가 공격에 노출되거나 Spring 기본 설정에서 403이 발생할 수 있다.
+- 서로 다른 site의 프론트/백엔드 배포는 서드파티 쿠키 차단으로 인증이 실패할 수 있다.
 - Prisma와 JPA의 날짜/관계 처리 방식이 달라 응답 형태가 달라질 수 있다.
 - 운영 DB를 그대로 사용하면 테스트 중 데이터가 바뀔 위험이 있다.
 - 메일 발송 실패 처리 방식이 바뀌면 고객 문의 UX가 달라질 수 있다.

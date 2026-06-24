@@ -260,6 +260,7 @@ Spring JPA Entity가 운영 DB와 validate 통과
 Spring 또는 SQL 기반 seed 방식이 확정됨
 docs/admin-bootstrap-spec.md 기준 관리자 계정 생성 절차가 검증됨
 운영/개발 DB 마이그레이션 체계가 Prisma 없이 확정됨
+docs/db-migration-ownership-spec.md의 Flyway baseline 검증 완료
 문서에서 Prisma를 현재 실행 도구로 참조하지 않음
 ```
 
@@ -347,6 +348,7 @@ GET /api/sitemap-data가 sitemap.ts를 대체한다.
 src/app/api 제거 조건이 충족된다.
 메인/제품/카테고리/sitemap이 Spring API 기반으로 동작한다.
 운영 DB 스키마는 변경되지 않는다.
+Flyway가 이후 DB schema 변경의 단일 소유자다.
 ```
 
 ## 이번 단계에서 하지 않을 일

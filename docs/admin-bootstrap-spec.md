@@ -32,13 +32,14 @@ OAuth 도입
 
 관리자 계정 bootstrap은 공개 HTTP API로 만들지 않는다.
 
-허용 방식:
+확정 방식:
 
 ```text
-Spring CommandLineRunner 또는 ApplicationRunner 기반 bootstrap
-운영자가 직접 실행하는 SQL seed
-배포 환경의 일회성 admin bootstrap job
+기본: Spring ApplicationRunner 기반 bootstrap
+fallback: 운영자가 직접 실행하는 SQL seed
 ```
+
+배포 환경의 일회성 job도 같은 `ApplicationRunner`와 환경 변수를 호출하는 방식으로만 구성한다.
 
 금지:
 
@@ -65,6 +66,8 @@ ADMIN_PASSWORD
 ADMIN_BOOTSTRAP_ENABLED=true일 때만 동작한다.
 Admin 테이블에 ADMIN_USERNAME이 이미 있으면 아무 작업도 하지 않는다.
 ADMIN_PASSWORD는 BCrypt로 hash 후 저장한다.
+Admin.create(username, passwordHash)로 Entity를 생성한다.
+Admin @PrePersist가 UTC createdAt을 설정한다.
 생성 성공 후 password 원문은 로그에 남기지 않는다.
 운영에서는 최초 1회 실행 후 ADMIN_BOOTSTRAP_ENABLED=false로 되돌린다.
 ```
@@ -132,6 +135,7 @@ ADMIN_BOOTSTRAP_ENABLED=false이면 생성하지 않음
 ADMIN_BOOTSTRAP_ENABLED=true이고 계정 없으면 생성
 이미 계정 있으면 중복 생성하지 않음
 password는 BCrypt hash로 저장
+createdAt이 UTC 기준으로 자동 설정됨
 평문 password가 로그에 남지 않음
 ```
 

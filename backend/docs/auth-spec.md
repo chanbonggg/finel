@@ -18,6 +18,7 @@
 POST /api/auth/login 구현
 GET /api/auth/logout 구현
 GET /api/auth/verify 구현
+GET /api/auth/csrf 구현
 AdminRepository 기반 관리자 조회
 bcrypt password 검증
 JWT 발급/검증
@@ -34,6 +35,21 @@ auth_token httpOnly 쿠키 발급/삭제
 OAuth/Social login
 Bearer token 저장 방식 전환
 ```
+
+## 확정 기술 결정
+
+```text
+JWT algorithm: HS256
+JWT lifetime: 43,200초
+JWT claims: id, username, iat, exp
+JWT secret: 최소 32바이트 무작위 값
+JWT library: Spring Security OAuth2 Resource Server + Nimbus JOSE
+Token source: auth_token HttpOnly cookie
+CSRF: Spring Security 활성화
+CSRF cookie/header: XSRF-TOKEN / X-XSRF-TOKEN
+```
+
+Auth 전환 시 기존 Next.js 세션을 유지하지 않는다. 배포 시 기존 `auth_token`을 만료시키고 한 번 재로그인한다.
 
 다음 단계로 넘길 일:
 
@@ -81,12 +97,14 @@ backend/src/main/java/com/finel/backend/auth/
 ├─ AuthController.java
 ├─ AuthService.java
 ├─ JwtTokenProvider.java
+├─ CookieJwtResolver.java
 ├─ Admin.java
 ├─ AdminRepository.java
 └─ dto/
    ├─ LoginRequest.java
    ├─ LoginResponse.java
-   └─ VerifyResponse.java
+   ├─ VerifyResponse.java
+   └─ CsrfResponse.java
 ```
 
 관련 config:
@@ -121,6 +139,8 @@ username/password 누락 시 400
 로그아웃 성공 시 auth_token 쿠키 만료
 verify는 유효한 쿠키가 있으면 user.id, username, iat, exp를 반환
 verify는 토큰이 없거나 유효하지 않으면 401
+csrf는 인증 없이 token과 headerName을 반환
+로그인 요청은 CSRF token이 없거나 틀리면 403
 ```
 
 비기능 요구사항:
@@ -131,6 +151,8 @@ JWT_SECRET은 운영에서 필수
 운영에서는 Secure=true
 프론트/백엔드 cross-origin이면 credentials CORS 허용
 로그에는 password, JWT 원문을 남기지 않음
+Spring Security CSRF를 disable하지 않음
+로그인 API는 IP 기준 기본 5회/분 rate limit
 ```
 
 권한 규칙:
@@ -147,6 +169,12 @@ JWT_SECRET은 운영에서 필수
 ### POST /api/auth/login
 
 Request:
+
+로그인 화면은 먼저 `GET /api/auth/csrf`를 호출한 뒤 아래 header를 포함한다.
+
+```http
+X-XSRF-TOKEN: <csrf-token>
+```
 
 ```json
 {
@@ -182,6 +210,7 @@ Failure:
 400 Bad Request: 아이디와 비밀번호를 입력해주세요.
 401 Unauthorized: 아이디 또는 비밀번호가 올바르지 않습니다.
 500 Internal Server Error: 서버 설정 오류
+429 Too Many Requests: 로그인 시도 제한 초과
 ```
 
 ### GET /api/auth/logout
@@ -260,6 +289,25 @@ Failure:
 }
 ```
 
+### GET /api/auth/csrf
+
+Request:
+
+```http
+GET /api/auth/csrf
+```
+
+Success:
+
+```json
+{
+  "token": "<csrf-token>",
+  "headerName": "X-XSRF-TOKEN"
+}
+```
+
+응답은 `XSRF-TOKEN` cookie도 발급한다. 이 cookie만 JavaScript에서 읽을 수 있도록 `HttpOnly=false`로 두며, 인증 cookie인 `auth_token`은 계속 `HttpOnly=true`다.
+
 ## DTO 기준
 
 ```java
@@ -318,6 +366,17 @@ JWT 생성
 JWT 서명 검증
 만료 검증
 username claim 추출
+id claim 추출
+HS256 외 algorithm 거부
+```
+
+`CookieJwtResolver` 책임:
+
+```text
+auth_token cookie 추출
+Authorization/localStorage token에 의존하지 않음
+쿠키가 없으면 anonymous request로 전달
+토큰 원문 로그 금지
 ```
 
 ## 쿠키/CORS 정책
@@ -336,9 +395,8 @@ production same-site:
   Domain 필요 시에만 설정
 
 production cross-site:
-  SameSite=None
-  Secure=true
-  Domain 배포 구조에 맞춰 명시
+  정식 지원하지 않음
+  same-site custom domain 또는 same-origin reverse proxy로 변경
 ```
 
 CORS:
@@ -347,7 +405,19 @@ CORS:
 allowedOrigins = FRONTEND_ORIGIN
 allowCredentials = true
 allowedMethods = GET, POST, PATCH, DELETE, OPTIONS
-allowedHeaders = Content-Type
+allowedHeaders = Content-Type, X-XSRF-TOKEN
+```
+
+CSRF:
+
+```text
+CookieCsrfTokenRepository 사용
+CookieCsrfTokenRepository.withHttpOnlyFalse() 사용
+cookie token을 header로 보내는 SPA용 CsrfTokenRequestHandler 적용
+GET /api/auth/csrf 공개
+POST /api/inquiries만 CSRF 검사 제외
+로그인과 관리자 상태 변경 API는 X-XSRF-TOKEN 필수
+실패 시 403 + CSRF_INVALID JSON
 ```
 
 ## 예외 처리
@@ -381,6 +451,10 @@ username/password 누락
 비밀번호 일치 시 JWT 생성
 유효 JWT 검증 성공
 만료/변조 JWT 검증 실패
+HS256이 아닌 JWT 거부
+32바이트 미만 JWT_SECRET으로 애플리케이션 시작 실패
+CSRF token 발급 및 검증
+로그인 rate limit 초과 429
 ```
 
 인증 실패 공통 응답:
@@ -399,6 +473,9 @@ POST /api/auth/login 실패 시 쿠키 없음
 GET /api/auth/logout 성공 시 만료 쿠키 반환
 GET /api/auth/verify 쿠키 없음 401
 GET /api/auth/verify 유효 쿠키 200
+GET /api/auth/csrf 200 + XSRF-TOKEN
+CSRF 없는 로그인 403
+CSRF 없는 관리자 변경 요청 403
 ```
 
 완료 기준:

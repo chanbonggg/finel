@@ -64,6 +64,7 @@ DB:
 backend/src/main/java/com/finel/backend/inquiry/
 ├─ InquiryController.java
 ├─ InquiryService.java
+├─ InquiryPersistenceService.java
 ├─ Inquiry.java
 ├─ InquiryRepository.java
 └─ dto/
@@ -201,13 +202,7 @@ DB 저장 실패:
   "stage": "MAIL_SEND",
   "inquirySaved": true,
   "inquiryId": 1,
-  "message": "문의는 접수되었지만 메일 발송에 실패했습니다.",
-  "mailError": {
-    "message": "메일 오류 메시지",
-    "code": "ERROR_CODE",
-    "responseCode": 500,
-    "command": "SMTP_COMMAND"
-  }
+  "message": "문의는 접수되었지만 알림 발송에 실패했습니다."
 }
 ```
 
@@ -216,6 +211,7 @@ DB 저장 실패:
 ```text
 현재 프론트는 res.ok || data.inquirySaved이면 사용자에게 성공으로 안내한다.
 메일 실패 시에도 inquirySaved=true를 반드시 유지한다.
+SMTP exception message/code/command는 공개 응답에 포함하지 않는다.
 ```
 
 ### GET /api/inquiries
@@ -317,17 +313,7 @@ public record InquiryCreateResponse(
     Boolean inquirySaved,
     Integer inquiryId,
     Boolean mailSent,
-    InquiryResponse inquiry,
-    MailErrorResponse mailError
-) {}
-```
-
-```java
-public record MailErrorResponse(
-    String message,
-    String code,
-    Integer responseCode,
-    String command
+    InquiryResponse inquiry
 ) {}
 ```
 
@@ -368,6 +354,30 @@ MailService 호출
 문의 삭제
 InquiryResponse 변환
 ```
+
+### 트랜잭션 경계
+
+`InquiryPersistenceService.save()`만 `@Transactional`로 실행한다. 이 메서드가 정상 반환되면 DB commit이 끝난 상태여야 한다.
+
+```text
+InquiryService.createInquiry()
+→ alias/필수값 검증
+→ InquiryPersistenceService.save()  # 별도 Spring bean, @Transactional
+→ commit 완료
+→ MailService.sendInquiryNotification()
+→ 성공 201 또는 실패 502/inquirySaved=true
+```
+
+금지:
+
+```text
+InquiryService 전체를 하나의 @Transactional로 감싸기
+같은 class 내부 self-invocation으로 save transaction 분리 시도
+MailSendException을 transaction 밖으로 전파해 저장 rollback 유발
+DB transaction을 연 상태로 SMTP 응답 대기
+```
+
+`InquiryPersistenceService`는 별도 Spring bean이어야 한다. 메일 예외는 저장 commit 이후 `InquiryService`가 잡아서 공개 오류 응답으로 변환한다.
 
 금지:
 
@@ -433,7 +443,9 @@ email optional 처리
 필수값 누락 VALIDATION_FAILED
 DB 저장 실패 DB_WRITE_FAILED
 메일 실패 MAIL_SEND_FAILED + 502 + inquirySaved=true
+메일 실패 응답에 SMTP 내부 상세가 없음
 메일 성공 DONE + 201 + mailSent=true + inquiry 객체 반환
+메일 실패 후 별도 조회 transaction에서 Inquiry 존재 확인
 ```
 
 Controller:
@@ -442,7 +454,10 @@ Controller:
 POST /api/inquiries 공개 접근 가능
 GET /api/inquiries 인증 없음 401
 DELETE /api/inquiries/{id} 인증 없음 401
+POST /api/inquiries는 IP 기준 기본 3회/10분 초과 시 429
 ```
+
+프록시 환경에서 client IP는 신뢰하는 reverse proxy가 정리한 header만 사용한다. 임의의 `X-Forwarded-For` 값을 그대로 신뢰하지 않는다. 다중 인스턴스로 확장하면 인메모리 rate limit을 공유 저장소 또는 gateway rate limit으로 교체한다.
 
 완료 기준:
 

@@ -18,6 +18,7 @@ Spring Boot 환경 변수 기준
 로컬/운영 origin 기준
 CORS allow origin/credentials 기준
 auth_token cookie SameSite/Secure/Domain 기준
+CSRF token cookie/header 기준
 JWT_SECRET 필수 시점
 MAIL_* 변수 기준
 DB 변수 기준
@@ -81,14 +82,15 @@ Frontend: https://finel.vercel.app
 Backend:  https://finel-api.onrender.com
 ```
 
-정책:
+판정:
 
 ```text
-SameSite=None
-Secure=true
-CORS allowCredentials=true
-allowedOrigins는 정확한 프론트 origin만 허용
+정식 운영 지원 대상이 아니다.
+서드파티 쿠키 차단으로 관리자 인증이 브라우저별로 실패할 수 있다.
+same-site custom domain 또는 Next.js reverse proxy로 변경해야 한다.
 ```
+
+운영 확정 구조는 `www.finel.co.kr`과 `api.finel.co.kr` 같은 same-site 조합이다. 서로 다른 site가 불가피하면 이 명세의 cookie 인증을 그대로 적용하지 않고 인증 구조를 별도로 재설계한다.
 
 ## Next.js 환경 변수
 
@@ -183,7 +185,7 @@ Spring CORS 기본:
 allowedOrigins = FRONTEND_ORIGIN
 allowCredentials = true
 allowedMethods = GET, POST, PATCH, DELETE, OPTIONS
-allowedHeaders = Content-Type
+allowedHeaders = Content-Type, X-XSRF-TOKEN
 ```
 
 금지:
@@ -208,15 +210,26 @@ OPTIONS 요청은 인증 없이 통과
 
 ```text
 auth_token
+XSRF-TOKEN
 ```
 
-공통:
+`auth_token` 공통:
 
 ```text
 HttpOnly=true
 Path=/
 Max-Age=43200
 ```
+
+`XSRF-TOKEN` 공통:
+
+```text
+HttpOnly=false
+Path=/
+요청 header X-XSRF-TOKEN과 값 일치 필수
+```
+
+Spring Security는 `CookieCsrfTokenRepository.withHttpOnlyFalse()`와 cookie/header SPA 흐름을 처리하는 `CsrfTokenRequestHandler`를 사용한다. 기본 request handler와 cookie token encoding 차이를 그대로 두지 않는다.
 
 로컬:
 
@@ -237,9 +250,8 @@ Domain 필요 시에만 설정
 운영 cross-site:
 
 ```text
-SameSite=None
-Secure=true
-Domain 배포 구조에 맞춰 명시
+지원하지 않음
+SameSite=None만으로 서드파티 쿠키 차단을 해결할 수 없음
 ```
 
 금지:
@@ -248,6 +260,7 @@ Domain 배포 구조에 맞춰 명시
 cross-site 배포에서 SameSite=Strict 사용
 HTTPS 운영에서 Secure=false 사용
 로그아웃 쿠키에 로그인과 다른 Path/Domain 사용
+Spring Security csrf.disable() 사용
 ```
 
 로그아웃:
@@ -266,6 +279,47 @@ SameSite
 Secure
 ```
 
+## CSRF 정책
+
+토큰 발급:
+
+```text
+GET /api/auth/csrf
+공개 API
+XSRF-TOKEN cookie 발급
+응답 body에 token과 headerName 반환
+```
+
+보호 대상:
+
+```text
+POST /api/auth/login
+POST/PATCH/DELETE /api/products/**
+POST/DELETE /api/categories/**
+DELETE /api/inquiries/**
+향후 추가되는 모든 cookie 인증 상태 변경 API
+```
+
+예외:
+
+```text
+POST /api/inquiries: 인증 cookie를 사용하지 않는 공개 등록 API이므로 CSRF 검사 제외
+GET /api/auth/logout: 기존 호환용 세션 종료 API이므로 CSRF 검사 대상 아님
+OPTIONS: preflight이므로 검사 제외
+```
+
+실패 응답:
+
+```json
+{
+  "success": false,
+  "errorCode": "CSRF_INVALID",
+  "message": "요청 보안 토큰이 유효하지 않습니다."
+}
+```
+
+status는 `403 Forbidden`이다. Spring 기본 HTML 오류 페이지를 반환하지 않고 공통 JSON 응답으로 변환한다.
+
 ## 프론트 fetch 기준
 
 모든 Spring API 호출:
@@ -276,11 +330,17 @@ fetch(url, {
 });
 ```
 
+로그인과 관리자 변경 요청은 먼저 `GET /api/auth/csrf`를 호출하고 응답 token을 `X-XSRF-TOKEN` header로 보낸다. CSRF 토큰을 localStorage/sessionStorage에 영구 저장하지 않고 메모리 또는 `XSRF-TOKEN` cookie에서 읽는다.
+
+로그인 성공과 로그아웃 성공 후 프론트의 메모리 CSRF token을 폐기한다. 다음 상태 변경 요청 전에 `GET /api/auth/csrf`로 새 token을 받는다.
+
 관리자 API:
 
 ```text
 credentials 누락 금지
+POST/PATCH/DELETE에서 X-XSRF-TOKEN 누락 금지
 401이면 로그인 화면 이동 또는 세션 만료 안내
+403 CSRF_INVALID이면 토큰을 다시 발급한 뒤 사용자가 작업을 재시도하도록 안내
 ```
 
 공개 API:
@@ -406,6 +466,7 @@ CORS 확인:
 ```text
 Access-Control-Allow-Origin이 FRONTEND_ORIGIN과 정확히 일치
 Access-Control-Allow-Credentials=true
+Access-Control-Allow-Headers에 X-XSRF-TOKEN 포함
 ```
 
 ## 완료 기준
@@ -415,7 +476,9 @@ Access-Control-Allow-Credentials=true
 로컬에서 verify가 200을 반환한다.
 로그아웃 후 verify가 401을 반환한다.
 운영 배포 구조별 SameSite/Secure 정책이 확정되어 있다.
+운영은 same-site 배포이며 cross-site cookie에 의존하지 않는다.
 allowedOrigins에 wildcard가 없다.
+로그인/관리자 변경 요청에서 CSRF 검증이 동작한다.
 민감정보가 NEXT_PUBLIC_*로 노출되지 않는다.
 운영 DB 스키마 자동 변경 설정이 없다.
 ```

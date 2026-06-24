@@ -131,20 +131,59 @@ JWT_SECRET, DB_URL, MAIL_PASSWORD 같은 민감정보를 NEXT_PUBLIC_*로 만들
 
 ```ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+let csrfToken: string | null = null;
+
+export function clearCsrfToken() {
+  csrfToken = null;
+}
+
+async function getCsrfToken() {
+  if (csrfToken) return csrfToken;
+
+  const response = await fetch(`${API_BASE_URL}/api/auth/csrf`, {
+    credentials: 'include',
+    cache: 'no-store',
+  });
+
+  if (!response.ok) throw new Error('CSRF token 발급 실패');
+  const data = await response.json();
+  csrfToken = data.token;
+  return csrfToken;
+}
 
 export async function apiFetch(path: string, init?: RequestInit) {
   const headers = new Headers(init?.headers);
+  const method = (init?.method ?? 'GET').toUpperCase();
+  const csrfRequired = !['GET', 'HEAD', 'OPTIONS'].includes(method)
+    && path !== '/api/inquiries';
 
   if (init?.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  return fetch(`${API_BASE_URL}${path}`, {
+  if (csrfRequired) {
+    headers.set('X-XSRF-TOKEN', await getCsrfToken());
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: 'include',
     headers,
   });
+
+  if (response.status === 403) csrfToken = null;
+  return response;
 }
+```
+
+CSRF 실패 처리:
+
+```text
+403 + errorCode=CSRF_INVALID이면 메모리의 csrfToken을 비운다.
+로그인 성공과 로그아웃 성공 후에도 기존 token을 비운다. Spring Security는 인증 성공 시 CSRF token을 교체할 수 있다.
+상태 변경 요청은 중복 생성/삭제 위험 때문에 자동 재시도하지 않는다.
+사용자에게 세션/보안 토큰 갱신 안내 후 해당 작업을 다시 실행하게 한다.
+로그인 화면은 submit 전에 GET /api/auth/csrf가 성공해야 한다.
 ```
 
 파일 업로드 예외:
@@ -173,13 +212,15 @@ src/app/admin/page.tsx → fetch('/api/auth/logout')
 POST /api/auth/login
 GET /api/auth/logout
 GET /api/auth/verify
+GET /api/auth/csrf
 ```
 
 주의:
 
 ```text
 logout은 POST가 아니라 GET 유지
-로그인/로그아웃/verify 모두 credentials: 'include'
+로그인/로그아웃/verify/csrf 모두 credentials: 'include'
+로그인은 X-XSRF-TOKEN 필수
 ```
 
 ### Admin Page Guard
@@ -331,6 +372,7 @@ inquirySaved
 
 ```text
 관리자 API 401: 로그인 페이지 이동 또는 세션 만료 안내
+관리자 API 403 CSRF_INVALID: CSRF token 폐기 후 재시도 안내
 404: 사용자에게 찾을 수 없음 안내
 409: 중복 카테고리 안내
 문의 메일 실패: inquirySaved=true이면 접수 성공 안내
@@ -350,13 +392,14 @@ Spring API는 날짜를 문자열로 내려준다.
 
 ```text
 1. src/lib/api/client.ts 생성
-2. auth/products/categories/inquiries API client 생성
-3. 공개 제품 목록/검색부터 교체
-4. 문의 등록 교체
-5. 관리자 로그인/로그아웃 교체
-6. 관리자 제품/카테고리/문의 훅 교체
-7. fetch('/api/') 잔여 검색
-8. 화면 수동 검증
+2. CSRF token 발급/요청 header 처리 구현
+3. auth/products/categories/inquiries API client 생성
+4. 공개 제품 목록/검색부터 교체
+5. 문의 등록 교체
+6. 관리자 로그인/로그아웃 교체
+7. 관리자 제품/카테고리/문의 훅 교체
+8. fetch('/api/') 잔여 검색
+9. 화면 수동 검증
 ```
 
 ## 검증 기준
@@ -374,6 +417,7 @@ rg "fetch\\('/api|fetch\\(`/api|/api/products|/api/categories|/api/inquiries|/ap
 검색이 Spring API로 동작한다.
 문의 등록이 성공한다.
 관리자 로그인 후 새로고침해도 인증이 유지된다.
+로그인과 관리자 변경 API가 CSRF token 없이는 403을 반환한다.
 관리자 제품 목록은 숨김 제품을 포함한다.
 공개 제품 목록은 숨김 제품을 포함하지 않는다.
 관리자 카테고리 생성/삭제가 동작한다.

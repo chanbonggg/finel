@@ -2,6 +2,8 @@
 
 작성일: 2026-05-30
 
+상태: 2026-06-23 보완 완료. 이 문서는 과거 gap 분석 기록으로 보존하며 실제 구현은 `docs/spring-migration-decisions.md`와 `docs/migration-runbook.md`를 따른다.
+
 ## 전제
 
 이번 전환의 목표는 Next.js를 제거하는 것이 아니다.
@@ -29,7 +31,7 @@ Database: PostgreSQL
 
 즉, 현재 Next.js 안에 있는 API Route, Prisma, 서버 인증/메일/DB 처리 기능을 Spring Boot로 분리하고, Next.js는 프론트엔드 역할에 집중하도록 만든다.
 
-현재 있는 문서만으로도 Spring Boot 백엔드 API 구현은 시작할 수 있다.
+현재 필요한 전환 명세는 모두 작성되어 Spring Boot 백엔드 구현을 시작할 수 있다.
 
 다만 전체 전환을 안전하게 끝내려면 아래 명세를 추가로 작성해야 한다.
 
@@ -141,10 +143,8 @@ Secure=true
 Domain 필요 여부 확정
 
 production cross-site:
-SameSite=None
-Secure=true
-allowedOrigins 정확히 지정
-allowCredentials=true
+정식 지원하지 않음
+same-site custom domain 또는 same-origin reverse proxy로 변경
 ```
 
 주의:
@@ -307,6 +307,6 @@ Next.js API Route 삭제
 
 ## 결론
 
-Spring Boot 백엔드 구현은 시작해도 된다.
+Spring Boot 백엔드 구현을 시작해도 된다.
 
-하지만 Next.js 프론트와 Spring Boot 백엔드를 완전히 분리하고, 기존 Next.js API Route와 Prisma 의존성을 제거하려면 위 추가 명세를 먼저 작성해야 한다.
+프론트 전환, Prisma 제거, Next.js API Route 제거, CORS/Cookie/CSRF, E2E, DB migration 소유권 명세가 작성되었다. 구현 중 선택지가 다시 생기면 러프 플랜에 직접 추가하지 않고 `docs/spring-migration-decisions.md`에 결정 기록을 추가한다.

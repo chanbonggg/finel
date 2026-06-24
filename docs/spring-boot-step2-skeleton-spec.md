@@ -57,9 +57,9 @@ finel/
 ## 기술 스택 기준
 
 ```text
-Language: Java 21
-Framework: Spring Boot 3.x
-Build: Gradle
+Language: Java 21 LTS
+Framework: Spring Boot 3.5.15
+Build: Gradle Wrapper 8.14.5, Groovy DSL
 Database: PostgreSQL
 ORM: Spring Data JPA
 Security: Spring Security
@@ -67,7 +67,7 @@ Validation: Jakarta Bean Validation
 Mail: Spring Mail
 ```
 
-Java는 21을 우선한다. 배포 환경에서 Java 21 사용이 어렵다면 Java 17로 낮춘다.
+Java toolchain은 21로 고정한다. 현재 개발 환경의 Microsoft OpenJDK 21을 사용할 수 있으며 Java 17 fallback은 사용하지 않는다. Spring Boot 4.x 업그레이드는 전환 완료 후 별도 작업으로 분리한다.
 
 ## 의존성
 
@@ -83,7 +83,25 @@ Spring Mail
 Lombok
 ```
 
-JWT 라이브러리는 인증 구현 단계에서 추가한다. 2단계 뼈대 생성 시점에는 의존성 후보만 명시하고, 실제 토큰 구현은 관리자 인증 이전 단계에서 확정한다.
+JWT는 인증 구현 단계에서 `Spring Security OAuth2 Resource Server + Nimbus JOSE` 조합으로 추가한다. 2단계 뼈대에는 아직 추가하지 않지만 다른 JWT 라이브러리로 변경하지 않는다.
+
+`build.gradle` 버전 고정:
+
+```groovy
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.15'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+```
+
+`gradle/wrapper/gradle-wrapper.properties`는 Spring Initializr가 생성한 `gradle-8.14.5-bin.zip`을 사용한다.
 
 2단계에서 `Spring Data JPA`와 PostgreSQL Driver는 이후 단계의 의존성 기준을 고정하기 위해 포함한다. 다만 2단계의 로컬 실행 검증은 DB 연결 없이도 성공해야 한다.
 
@@ -486,6 +504,14 @@ MAIL_PORT
 FRONTEND_ORIGIN
 ```
 
+관리자 인증 구현부터 CSRF 보호를 사용한다.
+
+```text
+CSRF cookie: XSRF-TOKEN
+CSRF header: X-XSRF-TOKEN
+Token endpoint: GET /api/auth/csrf
+```
+
 `DB_URL`은 Spring JDBC URL 형식으로 둔다.
 
 ```text
@@ -554,7 +580,7 @@ spring:
 
 초기 뼈대에서는 Spring Security 설정 파일만 만든다.
 
-상세 인증 구현은 관리자 API 이전 단계에서 확정한다.
+상세 인증 구현은 관리자 API 이전 단계에서 적용한다. 정책 결정은 `docs/spring-migration-decisions.md`에서 이미 확정했다.
 
 2단계의 `SecurityConfig`는 애플리케이션 실행 확인을 위해 모든 요청을 `permitAll`로 연다. 실제 관리자 인증/인가 규칙은 인증 구현 단계에서 적용한다.
 
@@ -562,7 +588,8 @@ spring:
 
 - 공개 API: 제품 조회, 카테고리 조회, 문의 등록
 - 관리자 API: 제품 생성/수정/삭제, 카테고리 생성/삭제, 문의 목록/삭제
-- 인증 방식: 기존 httpOnly 쿠키 기반을 우선 검토
+- 인증 방식: `auth_token` httpOnly 쿠키 기반으로 확정
+- CSRF: Spring Security CSRF 활성화, 공개 문의 등록만 검사 제외
 - CORS: `FRONTEND_ORIGIN`만 허용
 
 쿠키 정책은 환경별로 분리한다.
@@ -579,12 +606,11 @@ production same-site:
   Domain 필요 시에만 설정
 
 production cross-site:
-  SameSite=None
-  Secure=true
-  Domain 배포 구조에 맞춰 명시
+  정식 지원하지 않음
+  same-site custom domain 또는 same-origin reverse proxy로 변경
 ```
 
-프론트와 백엔드가 서로 다른 site로 배포되는 경우 `SameSite=Strict`는 관리자 인증 쿠키 전송을 막을 수 있으므로 사용하지 않는다.
+서로 다른 site의 cookie 인증은 서드파티 쿠키 차단으로 신뢰할 수 없으므로 운영 대상에서 제외한다.
 
 ## 테스트 구조
 
@@ -699,6 +725,7 @@ backend/docs/auth-spec.md, product-spec.md, category-spec.md, inquiry-spec.md, m
 local/test profile에서 DB, Mail, JWT_SECRET 없이 컨텍스트 로딩이 성공한다.
 아직 실제 API 기능과 DB 접근 기능은 구현되어 있지 않다.
 운영 DB에는 아무 변경도 발생하지 않는다.
+Java toolchain 21, Spring Boot 3.5.15, Gradle Wrapper 8.14.5가 빌드 파일에 고정되어 있다.
 ```
 
 ## 이후 단계 연결

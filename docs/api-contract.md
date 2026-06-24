@@ -161,15 +161,30 @@ Cookie: auth_token=<JWT>
 
 Spring 전환 초기에는 이 방식을 유지하는 것이 가장 안전하다.
 
+확정 JWT 기준:
+
+```text
+algorithm: HS256
+lifetime: 43,200초
+claims: id, username, iat, exp
+secret: 최소 32바이트
+implementation: Spring Security OAuth2 Resource Server + Nimbus JOSE
+```
+
+Auth 전환 배포에서는 기존 Next.js 세션을 만료시키고 한 번 재로그인한다.
+
 Spring에서 필요한 설정:
 
 - 로그인 성공 시 `Set-Cookie: auth_token=...` 응답
 - 쿠키 옵션: `HttpOnly`, `Path=/`
 - 로컬 개발 기본값: `SameSite=Lax`, `Secure=false`
 - 운영에서 프론트와 백엔드가 같은 site이면 `SameSite=Lax`, `Secure=true`
-- 운영에서 프론트와 백엔드가 서로 다른 site이면 `SameSite=None`, `Secure=true`
+- 운영은 same-site custom domain 또는 same-origin reverse proxy로 배포
+- 서로 다른 site의 cookie 인증은 서드파티 쿠키 차단 때문에 지원하지 않음
 - 프론트와 백엔드 origin이 다르면 CORS credentials 허용 필요
 - 관리자 API 요청에서 쿠키를 읽어 JWT 검증
+- Spring Security CSRF 활성화
+- `GET /api/auth/csrf`가 발급한 token을 상태 변경 요청의 `X-XSRF-TOKEN` header로 전송
 
 프론트에서 `http://localhost:3000` → `http://localhost:8080`처럼 cross-origin으로 직접 호출하면 쿠키가 자동으로 포함되지 않는다.
 
@@ -187,7 +202,7 @@ Spring CORS 설정도 다음 조건을 만족해야 한다.
 allowedOrigins: http://localhost:3000
 allowCredentials: true
 allowedMethods: GET, POST, PATCH, DELETE, OPTIONS
-allowedHeaders: Content-Type
+allowedHeaders: Content-Type, X-XSRF-TOKEN
 ```
 
 같은 도메인 프록시를 쓰면 이 변경을 줄일 수 있다.
@@ -232,6 +247,7 @@ category/
 inquiry/
 ├─ InquiryController.java
 ├─ InquiryService.java
+├─ InquiryPersistenceService.java
 ├─ Inquiry.java
 ├─ InquiryRepository.java
 └─ dto/
@@ -406,6 +422,7 @@ createdAt: LocalDateTime
 | Auth | POST | `/api/auth/login` | 공개 | 관리자 로그인 |
 | Auth | GET | `/api/auth/logout` | 공개 | 관리자 로그아웃 |
 | Auth | GET | `/api/auth/verify` | 관리자 | 현재 토큰 검증 |
+| Auth | GET | `/api/auth/csrf` | 공개 | CSRF token 발급 |
 | Products | GET | `/api/products` | 공개 | 공개 제품 목록 |
 | Products | GET | `/api/products?includeHidden=true` | 관리자 | 관리자 제품 전체 목록 |
 | Products | GET | `/api/products?categoryId=` | 공개 | 카테고리별 공개 제품 목록 |
@@ -438,6 +455,12 @@ src/app/admin/login/page.tsx
 
 Request:
 
+로그인 전에 `GET /api/auth/csrf`를 호출하고 다음 header를 보낸다.
+
+```http
+X-XSRF-TOKEN: <csrf-token>
+```
+
 ```json
 {
   "username": "admin",
@@ -451,7 +474,7 @@ Request:
 - `password` 필수
 - DB에서 `username`으로 Admin 조회
 - bcrypt로 password 검증
-- `JWT_SECRET` 또는 Spring의 JWT secret 설정 필요
+- 최소 32바이트 `JWT_SECRET` 필요
 
 Success status:
 
@@ -478,7 +501,7 @@ Set-Cookie: auth_token=<jwt>; HttpOnly; Path=/; Max-Age=43200; SameSite=Lax
 
 - 로컬 개발: `SameSite=Lax`, `Secure=false`, `Domain` 미설정
 - 운영 same-site 배포: `SameSite=Lax`, `Secure=true`, 필요할 때만 `Domain` 설정
-- 운영 cross-site 배포: `SameSite=None`, `Secure=true`, CORS `allowCredentials=true`, `allowedOrigins`는 정확한 프론트 origin만 허용
+- 운영 cross-site 배포: 지원하지 않음. same-site custom domain 또는 reverse proxy로 변경
 - `SameSite=Strict`는 프론트와 백엔드가 다른 site일 때 관리자 인증을 깨뜨릴 수 있으므로 기본값으로 쓰지 않는다.
 
 Fail examples:
@@ -651,6 +674,23 @@ AuthController.verify()
 → JWT 검증
 → payload 반환
 ```
+
+## 6.4 GET `/api/auth/csrf`
+
+로그인과 관리자 변경 요청에 사용할 CSRF token 발급 API다.
+
+```http
+GET /api/auth/csrf
+```
+
+```json
+{
+  "token": "<csrf-token>",
+  "headerName": "X-XSRF-TOKEN"
+}
+```
+
+응답은 `XSRF-TOKEN` cookie를 함께 발급한다. `auth_token`은 HttpOnly를 유지하고 `XSRF-TOKEN`만 프론트에서 읽을 수 있다. 공개 문의 등록 `POST /api/inquiries`는 cookie 인증을 사용하지 않으므로 CSRF 검사에서 제외한다.
 
 ## 7. 제품 API
 
@@ -1869,15 +1909,11 @@ DB 저장 실패는 문의가 저장되지 않은 상태이므로 inquirySaved=f
   "stage": "MAIL_SEND",
   "inquirySaved": true,
   "inquiryId": 1,
-  "message": "문의는 접수되었지만 메일 발송에 실패했습니다.",
-  "mailError": {
-    "message": "메일 오류 메시지",
-    "code": "ERROR_CODE",
-    "responseCode": 500,
-    "command": "SMTP_COMMAND"
-  }
+  "message": "문의는 접수되었지만 알림 발송에 실패했습니다."
 }
 ```
+
+SMTP exception message, response code, command 같은 내부 정보는 공개 응답에 포함하지 않는다. 서버 로그에는 `inquiryId`, exception class와 안전하게 정제한 message만 기록한다.
 
 Success status:
 
@@ -2149,6 +2185,7 @@ Spring Security에서는 다음처럼 생각하면 된다.
 
 ```text
 permitAll:
+  GET  /api/auth/csrf
   POST /api/auth/login
   GET  /api/auth/logout
   GET  /api/products
@@ -2170,6 +2207,8 @@ authenticated admin:
   GET    /api/inquiries
   DELETE /api/inquiries/*
 ```
+
+CSRF는 인가와 별도로 적용한다. 로그인과 authenticated admin의 POST/PATCH/DELETE는 `X-XSRF-TOKEN`이 없으면 403을 반환한다. Security matcher는 query parameter를 구분하지 않으므로 `GET /api/products?includeHidden=true`의 관리자 검증은 Controller/Service에서도 반드시 수행한다.
 
 주의:
 
@@ -2307,6 +2346,7 @@ export async function apiFetch(path: string, init?: RequestInit) {
 Spring Web
 Spring Data JPA
 Spring Security
+Spring Security OAuth2 Resource Server
 PostgreSQL Driver
 Validation
 Java Mail Sender
@@ -2316,7 +2356,9 @@ Lombok
 Java 버전:
 
 ```text
-Java 17 또는 Java 21
+Java 21 LTS
+Spring Boot 3.5.15
+Gradle Wrapper 8.14.5
 ```
 
 초기 패키지 예시:
@@ -2390,6 +2432,7 @@ POST /api/inquiries
 POST /api/auth/login
 GET /api/auth/logout
 GET /api/auth/verify
+GET /api/auth/csrf
 ```
 
 이 단계에서 JWT 쿠키와 Spring Security 필터를 구현한다.
