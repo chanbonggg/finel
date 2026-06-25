@@ -1,4 +1,4 @@
-import { Product } from '@/hooks/useProductAdmin';
+import type { Product } from '@/lib/api/types';
 
 interface Props {
     products: Product[];

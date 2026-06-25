@@ -12,17 +12,22 @@ export default function AdminLoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!username.trim() || !password) return;
         setIsSubmitting(true);
         try {
-            const { response: res, data } = await login(username, password);
-
-            if (res.ok && data.success) {
-                router.replace('/admin');
-            } else {
-                alert(data.message || '로그인 실패');
-            }
-        } catch {
-            alert('서버 오류');
+            const data = await login(username.trim(), password);
+            if (data.success !== true) throw new Error(data.message || '로그인에 실패했습니다.');
+            router.replace('/chanyoung');
+        } catch (error) {
+            const value = error as Error & { status?: number; errorCode?: string; data?: { message?: string; errorCode?: string } };
+            const status = value.status;
+            const code = value.errorCode ?? value.data?.errorCode;
+            if (status === 400) alert(value.data?.message || '아이디와 비밀번호를 확인해 주세요.');
+            else if (status === 401) alert('아이디 또는 비밀번호가 올바르지 않습니다.');
+            else if (status === 403 && code === 'CSRF_INVALID') alert('보안 토큰이 만료되었습니다. 다시 로그인해 주세요.');
+            else if (status === 403) alert('로그인 요청이 거부되었습니다.');
+            else if (status === 429) alert('로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.');
+            else alert(value.data?.message || value.message || '서버에 연결할 수 없습니다.');
         } finally {
             setIsSubmitting(false);
         }
@@ -42,6 +47,7 @@ export default function AdminLoginPage() {
                         onChange={(e) => setUsername(e.target.value)}
                         className="w-full border p-3 rounded"
                         required
+                        autoComplete="username"
                     />
                 </div>
                 <div className="mb-4">
@@ -54,6 +60,7 @@ export default function AdminLoginPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full border p-3 rounded"
                         required
+                        autoComplete="current-password"
                     />
                 </div>
                 <button

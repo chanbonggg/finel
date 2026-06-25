@@ -2,21 +2,26 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import InquiryTab from '@/app/admin/InquiryTap'
-import ProductTab from '@/app/admin/ProductTap';
+import InquiryTab from '@/app/chanyoung/InquiryTap'
+import ProductTab from '@/app/chanyoung/ProductTap';
 import { logout } from '@/lib/api/auth';
 
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState("inquiry");
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const router = useRouter();
 
     const handleLogout = async () => {
+        if (isLoggingOut) return;
+        setIsLoggingOut(true);
         try {
             await logout();
-        } catch {
-            // 실패해도 로그인 페이지로 이동
+            router.replace('/chanyoung/login');
+        } catch (error) {
+            const value = error as Error & { status?: number; data?: { message?: string } };
+            alert(value.data?.message || value.message || '로그아웃에 실패했습니다. 다시 시도해 주세요.');
         } finally {
-            router.replace('/admin/login');
+            setIsLoggingOut(false);
         }
     };
 
@@ -28,7 +33,9 @@ export default function AdminPage() {
                     <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <div className="flex items-center gap-4">
                         <span className="text-sm text-gray-500">관리자님 환영합니다 </span>
-                        <button onClick={handleLogout} className="text-sm text-red-500 hover:underline">로그아웃</button>
+                        <button onClick={handleLogout} disabled={isLoggingOut} className="text-sm text-red-500 hover:underline disabled:text-gray-400">
+                            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+                        </button>
                     </div>
                 </div>
 

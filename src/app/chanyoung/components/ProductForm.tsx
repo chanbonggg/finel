@@ -116,7 +116,7 @@ export default function ProductForm({ data, actions, refs }: Props) {
                             </FormField>
                         </div>
 
-                        <FormField label="사양 (Spec)">
+                        <FormField label="사양 (Spec)" required>
                             <AdminInput
                                 placeholder="예: 220V / 60Hz / 3000RPM"
                                 value={newProduct.spec}

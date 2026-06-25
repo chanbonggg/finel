@@ -1,4 +1,4 @@
-import { Inquiry } from "@/types/inquiry";
+import type { Inquiry } from '@/lib/api/types';
 import InquiryItem from "./InquiryItem";
 
 interface InquiryListProps {

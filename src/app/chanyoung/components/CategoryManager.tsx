@@ -1,4 +1,4 @@
-import { Category } from '@/hooks/useProductAdmin';
+import type { Category } from '@/lib/api/types';
 import { AdminSelect, AdminInput } from '../AdminUI';
 
 interface Props {
