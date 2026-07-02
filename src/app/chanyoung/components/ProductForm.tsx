@@ -1,4 +1,5 @@
 import { PARTNERS } from '@/constants/partners';
+import Image from 'next/image';
 import { FormField, AdminInput, AdminTextarea } from '../AdminUI';
 import CategoryManager from './CategoryManager';
 import { useProductAdmin } from '@/hooks/useProductAdmin';
@@ -74,7 +75,7 @@ export default function ProductForm({ data, actions, refs }: Props) {
                                     </div>
                                 ) : newProduct.imageUrl ? (
                                     <>
-                                        <img src={newProduct.imageUrl} alt="미리보기" className="w-full h-full object-cover" />
+                                        <Image src={newProduct.imageUrl} alt="미리보기" fill sizes="(min-width: 1024px) 33vw, 100vw" className="object-cover" />
                                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition">
                                             <span className="text-white font-bold bg-black/50 px-3 py-1 rounded-full text-sm">🔄 사진 변경</span>
                                         </div>

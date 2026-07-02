@@ -1,4 +1,5 @@
 import type { Product } from '@/lib/api/types';
+import Image from 'next/image';
 
 interface Props {
     products: Product[];
@@ -27,9 +28,9 @@ export default function ProductTable({ products, isLoading, onDelete, onEdit }: 
                     ) : products.map(prod => (
                         <tr key={prod.id} className="hover:bg-blue-50/50 transition duration-150">
                             <td className="p-4 text-center">
-                                <div className="w-16 h-16 bg-white rounded-lg border border-gray-100 p-1 mx-auto shadow-sm">
+                                <div className="relative w-16 h-16 bg-white rounded-lg border border-gray-100 p-1 mx-auto shadow-sm overflow-hidden">
                                     {prod.imageUrl ? (
-                                        <img src={prod.imageUrl} className="w-full h-full object-cover rounded" alt={prod.name} />
+                                        <Image src={prod.imageUrl} className="object-cover rounded" alt={prod.name} fill sizes="64px" />
                                     ) : (
                                         <div className="w-full h-full bg-gray-50 flex items-center justify-center text-xs text-gray-300 rounded">No Img</div>
                                     )}
