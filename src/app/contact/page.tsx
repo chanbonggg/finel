@@ -126,9 +126,10 @@ function ContactContent() {
             <div className="site-container grid grid-cols-[0.82fr_1.18fr] items-start gap-6 max-lg:grid-cols-1">
             <aside className="surface-card-lg p-7">
                 <p className="site-eyebrow">Contact</p>
-                <h1 className="site-title">견적 및 제휴 문의</h1>
+                <h2 className="site-title">견적 문의</h2>
                 <p className="site-copy mt-4">
-                    제품 도입을 위한 전문 상담을 신청하세요. 담당자가 확인 후
+                    제품 도입을 위한 전문 상담을 신청하세요.
+                    담당자가 확인 후
                     신속하게 연락드립니다.
                 </p>
 
