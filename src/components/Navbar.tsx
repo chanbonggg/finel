@@ -5,8 +5,8 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-40 bg-[var(--color-black)] text-white">
       <div className="site-container flex min-h-[58px] items-center justify-between gap-5">
-        <Link href="/" className="shrink-0 text-[19px] font-black tracking-normal">
-          FineL Pneumatics
+        <Link href="/" className="shrink-0 text-2xl font-black leading-none tracking-normal">
+          FineL
         </Link>
 
         <ul className="flex min-w-0 items-center gap-3 text-sm text-white/75 md:gap-6">

@@ -1,4 +1,4 @@
-import { PARTNERS } from "@/constants/partners";
+    import { PARTNERS } from "@/constants/partners";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getSiteUrl } from "@/lib/site-url";
@@ -62,9 +62,9 @@ export default function AboutPage() {
 
                 <div className="mt-6 grid grid-cols-[0.9fr_1.1fr] gap-6 max-lg:grid-cols-1">
                     <section className="surface-card-lg p-6">
-                        <h2 className="site-section-title mb-5">주요 파트너사</h2>
+                        <h2 className="site-section-title leading-tight">주요 파트너사</h2>
 
-                        <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
+                        <div className="mt-9 grid grid-cols-3 gap-3 max-sm:grid-cols-1">
                             {PARTNERS.map((partner) => (
                                 <a
                                     key={partner.id}

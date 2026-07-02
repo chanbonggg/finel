@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "@/components/Navbar";
-import QuickMenu from "@/components/QuickMenu";
 import Footer from "@/components/Footer";
 import { getSiteUrl } from "@/lib/site-url";
 import { SEO } from "@/constants/seo";
@@ -81,7 +80,6 @@ export default function RootLayout({
         <div className="site-shell">
           <Navbar />
           <main className="min-h-screen">{children}</main>
-          <QuickMenu />
           <Footer />
         </div>
       </body>

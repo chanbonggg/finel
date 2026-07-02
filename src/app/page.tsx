@@ -5,6 +5,7 @@ import HomeHeroClient from "@/app/HomeHeroClient";
 import { getFeaturedProducts } from "@/lib/api/products";
 import { PARTNERS } from "@/constants/partners";
 import { SEO } from "@/constants/seo";
+import type { Product } from "@/lib/api/products";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,18 @@ export const metadata: Metadata = {
   },
 };
 
+function getRandomHeroProducts(products: Product[]) {
+  const visibleProducts = products.filter((product) => product.isVisible);
+  const shuffled = [...visibleProducts].sort(() => Math.random() - 0.5);
+  const targetCount = shuffled.length >= 5 ? 5 : 4;
+
+  return shuffled.slice(0, Math.min(shuffled.length, targetCount));
+}
+
 export default async function Home() {
-  const products = await getFeaturedProducts(4);
+  const products = await getFeaturedProducts(12);
+  const heroProducts = getRandomHeroProducts(products);
+  const featuredProducts = products.slice(0, 4);
 
   return (
     <div>
@@ -55,7 +66,7 @@ export default async function Home() {
 
           </div>
 
-          <HomeHeroClient products={products} />
+          <HomeHeroClient products={heroProducts} />
         </div>
       </section>
 
@@ -74,13 +85,13 @@ export default async function Home() {
             </Link>
           </div>
 
-          {products.length === 0 ? (
+          {featuredProducts.length === 0 ? (
             <div className="surface-card p-8 text-center text-[var(--color-muted)]">
               등록된 주력 제품이 없습니다.
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
-              {products.map((product) => (
+              {featuredProducts.map((product) => (
                 <Link
                   key={product.id}
                   href={`/products/${product.id}`}
