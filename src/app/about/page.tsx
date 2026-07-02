@@ -1,5 +1,6 @@
 import { PARTNERS } from "@/constants/partners";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { getSiteUrl } from "@/lib/site-url";
 import { SEO } from "@/constants/seo";
 
@@ -43,71 +44,66 @@ export default function AboutPage() {
     };
 
     return (
-        <div className="flex flex-col gap-16 py-10">
+        <div className="site-section">
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
             />
 
-            {/* 1. 회사 소개 헤더 (Vision) */}
-            <section className="text-center">
-                <h1 className="text-4xl font-bold mb-6">About Us</h1>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                    &quot;우리는 기술로 더 나은 세상을 만듭니다.&quot;<br />
-                    고객의 신뢰를 최우선으로 생각하며, 끊임없는 혁신을 통해 최고의 가치를 제공합니다.
-                </p>
-            </section>
+            <div className="site-container">
+                <section className="surface-card-lg p-7 md:p-12">
+                    <p className="site-eyebrow">About FineL</p>
+                    <h1 className="site-title">산업용 공압 부품 전문 기업</h1>
+                    <p className="site-copy mt-4 max-w-3xl">
+                        신뢰할 수 있는 기술과 검증된 안정성을 바탕으로 제품 도입 상담부터
+                        견적 및 제휴 문의까지 책임 있게 지원합니다.
+                    </p>
+                </section>
 
-            {/* 4. [FR-01] 파트너사 (Partners) */}
-            <section>
-                <h2 className="text-2xl font-bold mb-8 border-l-4 border-gray-800 pl-4">
-                    주요 파트너사 홈페이지
-                </h2>
+                <div className="mt-6 grid grid-cols-[0.9fr_1.1fr] gap-6 max-lg:grid-cols-1">
+                    <section className="surface-card-lg p-6">
+                        <h2 className="site-section-title mb-5">주요 파트너사</h2>
 
-                {/* 2. 코드가 훨씬 깔끔해졌죠? */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {PARTNERS.map((partner) => (
-                        <a
-                            key={partner.id}
-                            href={partner.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group bg-white border border-gray-200 h-32 rounded-lg flex items-center justify-center p-4 hover:shadow-lg hover:border-blue-500 transition duration-300"
-                        >
-                            <img
-                                src={partner.logo}
-                                alt={partner.name}
-                                className="max-w-full max-h-full object-contain"
-                            />
-                        </a>
-                    ))}
+                        <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
+                            {PARTNERS.map((partner) => (
+                                <a
+                                    key={partner.id}
+                                    href={partner.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="grid min-h-[78px] place-items-center rounded-xl border border-[var(--color-line)] bg-[var(--color-pale)] p-4 transition hover:border-[var(--color-blue)]"
+                                >
+                                    <Image
+                                        src={partner.logo}
+                                        alt={partner.name}
+                                        width={120}
+                                        height={64}
+                                        className="max-h-12 w-auto object-contain"
+                                    />
+                                </a>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section className="surface-card-lg p-6">
+                        <h2 className="site-section-title mb-5">오시는 길</h2>
+                        <div className="h-72 overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-pale)]">
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                title="map"
+                                src="https://maps.google.com/maps?q=인천광역시 동구 방축로 37번길 30&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                                loading="lazy"
+                            ></iframe>
+                        </div>
+                        <div className="mt-5 grid gap-2 text-[var(--color-body)]">
+                            <p className="break-keep"><strong>주소:</strong> 인천광역시 동구 방축로 37번길 30, 2동 206호</p>
+                            <p><strong>전화:</strong> 02-2693-3569</p>
+                            <p><strong>팩스:</strong> 032-232-8823</p>
+                        </div>
+                    </section>
                 </div>
-            </section>
-
-            {/* 5. 오시는 길 (Map Placeholder) */}
-            <section className="mb-10">
-                <h2 className="text-2xl font-bold mb-8 border-l-4 border-gray-800 pl-4">
-                    오시는 길
-                </h2>
-                {/* 지도 영역 (Iframe 사용) */}
-                <div className="w-full h-96 rounded-xl overflow-hidden shadow-lg border border-gray-200 bg-gray-100">
-                    <iframe
-                        width="100%"
-                        height="100%"
-                        title="map"
-                        className=""
-                        // q= 뒤에 주소를 넣으면 해당 위치를 보여줍니다.
-                        src="https://maps.google.com/maps?q=인천광역시 동구 방축로 37번길 30&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                        loading="lazy"
-                    ></iframe>
-                </div>
-                <div className="mt-6 flex flex-col gap-2 text-gray-700">
-                    <p><strong>주소:</strong> 인천광역시 동구 방축로 37번길 30,2동 206호</p>
-                    <p><strong>전화:</strong> 02-2693-3569</p>
-                    <p><strong>팩스:</strong> 032-232-8823</p>
-                </div>
-            </section>
-
+            </div>
         </div>
     );
 }

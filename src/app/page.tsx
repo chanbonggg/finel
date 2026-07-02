@@ -1,10 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import HomeHeroClient from "@/app/HomeHeroClient";
 import { getFeaturedProducts } from "@/lib/api/products";
+import { PARTNERS } from "@/constants/partners";
 import { SEO } from "@/constants/seo";
-import PhoneButton from "@/components/PhoneButton";
 
-export const dynamic = 'force-dynamic'; // 항상 최신 데이터를 보여주기 위해 설정
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `${SEO.companyName} | ${SEO.siteName}`,
@@ -23,112 +25,134 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-
-  // 1. DB에서 최신 제품 4개 가져오기
   const products = await getFeaturedProducts(4);
 
-  const formattedProducts = products.map((product) => ({
-    ...product,
-    categoryName: product.category,
-  }));
-
-  // 디자인용 배경색 배열 (DB에 색상 정보가 없으므로 순서대로 적용)
-  const bgColors = ["bg-slate-200", "bg-gray-200", "bg-zinc-200", "bg-neutral-200"];
-
   return (
-    <div className="flex flex-col gap-16 pb-10">
+    <div>
+      <section className="border-b border-[var(--color-line)] bg-white">
+        <div className="site-container grid min-h-[calc(100vh-58px)] grid-cols-[minmax(0,1fr)_minmax(360px,0.84fr)] items-center gap-11 py-14 max-lg:min-h-0 max-lg:grid-cols-1">
+          <div className="min-w-0">
+            <p className="site-eyebrow">산업용 공압 부품 전문 기업</p>
+            <h1 className="site-title max-w-3xl">
+              제품 도입 상담부터 견적 및 제휴 문의까지
+            </h1>
+            <p className="site-copy mt-5 max-w-2xl">
+              공압 부품과 산업용 부품을 확인하고, 필요한 제품은 전문 상담을
+              신청하세요. 담당자가 확인 후 신속하게 연락드립니다.
+            </p>
 
-      {/* 1. 히어로 섹션 (메인 배너) */}
-      <section className="bg-gray-900 text-white py-20 px-6 rounded-b-3xl text-center shadow-xl">
-        <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
-          신뢰할 수 있는 기술, <br />
-          <span className="text-blue-400">검증된 안정성</span>
-        </h1>
-        <p className="text-gray-400 mb-10 max-w-2xl mx-auto text-lg">
-          책임 있는 계약과 지속적인 지원으로
-          고객의 비즈니스 성장을 꾸준히 돕습니다
-        </p>
-        <div className="flex flex-wrap justify-center gap-4">
-          <Link
-            href="/products"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-full transition shadow-lg"
-          >
-            제품 보기
-          </Link>
-          <Link
-            href="/contact"
-            className="border-2 border-white text-white hover:bg-white hover:text-gray-900 font-bold py-4 px-10 rounded-full transition"
-          >
-            견적 및 제휴 문의
-          </Link>
-          <PhoneButton />
+            <div className="mt-7 flex flex-wrap gap-2.5">
+              <Link className="button-primary" href="/contact">
+                견적 및 제휴 문의
+              </Link>
+              <Link className="button-secondary" href="/products">
+                제품 보기
+              </Link>
+              <a className="button-secondary" href="tel:02-2693-3569">
+                전화 문의
+              </a>
+            </div>
+
+          </div>
+
+          <HomeHeroClient products={products} />
         </div>
       </section>
 
-
-      {/* 3. [FR-02] 주력 제품 소개 (DB 연동 완료) */}
-      <section className="container mx-auto px-4">
-        <div className="flex justify-between items-end mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900">주력 제품 안내</h2>
-            <p className="text-gray-500 mt-2">최고의 기술력이 담긴 최신 제품을 만나보세요.</p>
+      <section className="site-section">
+        <div className="site-container">
+          <div className="mb-6 flex items-end justify-between gap-5 max-sm:flex-col max-sm:items-start">
+            <div>
+              <p className="site-eyebrow">Featured products</p>
+              <h2 className="site-section-title">주력 제품 안내</h2>
+              <p className="site-muted mt-2">
+                최고의 기술력이 담긴 최신 제품을 만나보세요.
+              </p>
+            </div>
+            <Link className="button-secondary" href="/products">
+              전체보기
+            </Link>
           </div>
-          <Link href="/products" className="text-blue-600 font-semibold hover:underline">
-            전체보기 &rarr;
-          </Link>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* 제품 데이터가 없을 경우 처리 */}
-          {formattedProducts.length === 0 ? (
-            <div className="col-span-4 text-center py-10 text-gray-400 bg-gray-50 rounded-xl">
-              등록된 주력 제품이 없습니다. 관리자 페이지에서 제품을 등록해주세요.
+          {products.length === 0 ? (
+            <div className="surface-card p-8 text-center text-[var(--color-muted)]">
+              등록된 주력 제품이 없습니다.
             </div>
           ) : (
-            formattedProducts.map((product, index) => (
-              <Link key={product.id} href={`/products/${product.id}`} className="group border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition duration-300 bg-white flex flex-col">
-
-                {/* 이미지 영역 (색상 랜덤 배정) */}
-                <div className={`h-56 ${bgColors[index % bgColors.length]} flex items-center justify-center text-gray-400`}>
-                  {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="group-hover:scale-110 transition duration-300 font-bold text-2xl opacity-20">
-                      {product.categoryName.substring(0, 2)}
-                    </span>
-                  )}
-                </div>
-
-                {/* 정보 영역 */}
-                <div className="p-6 flex flex-col flex-grow">
-                  <div className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-wide">
-                    {product.categoryName} | {product.spec}
+            <div className="grid grid-cols-4 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
+              {products.map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/products/${product.id}`}
+                  className="surface-card group flex min-w-0 flex-col"
+                >
+                  <div className="product-image-panel relative h-[190px] min-h-0">
+                    {product.imageUrl ? (
+                      <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                        className="product-image-contain"
+                      />
+                    ) : (
+                      <span className="placeholder-mark">
+                        {product.category.slice(0, 2)}
+                      </span>
+                    )}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 truncate group-hover:text-blue-600 transition">{product.name}</h3>
-                  <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                    {product.description}
-                  </p>
-                </div>
-              </Link>
-            ))
+                  <div className="flex grow flex-col p-5">
+                    <span className="mb-2 text-xs font-black text-[var(--color-blue-dark)]">
+                      {product.category} · {product.spec}
+                    </span>
+                    <h3 className="line-clamp-2-safe text-xl font-black text-[var(--color-ink)] group-hover:text-[var(--color-blue)]">
+                      {product.name}
+                    </h3>
+                    <p className="line-clamp-2-safe mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+                      {product.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       </section>
 
-      {/* 4. [FR-03] 하단 CTA (문의 유도) */}
-      <section className="container mx-auto px-4 my-10">
-        <div className="bg-blue-50 rounded-3xl p-10 md:p-16 text-center">
-          <h2 className="text-3xl font-bold mb-4">원하시는 제품을 찾지 못하셨나요?</h2>
-          <p className="text-gray-600 mb-8 max-w-xl mx-auto">
-            저희는 고객의 요구사항에 맞춘 커스텀 솔루션도 제공하고 있습니다.
-            담당자와의 1:1 상담을 통해 최적의 제안을 받아보세요.
-          </p>
-          <Link href="/contact" className="inline-block bg-blue-600 text-white font-bold py-4 px-12 rounded-full hover:bg-blue-700 transition shadow-lg">
-            무료 상담 신청하기
-          </Link>
+      <section className="site-section bg-[var(--color-black)] text-white">
+        <div className="site-container grid grid-cols-[0.85fr_1.15fr] items-center gap-11 max-lg:grid-cols-1">
+          <div>
+            <p className="mb-3 text-[15px] font-black text-[#8fc4ff]">Partners</p>
+            <h2 className="text-4xl font-black leading-tight">
+              공압 전문 제품을 상담합니다
+            </h2>
+            <p className="mt-4 text-[17px] leading-relaxed text-white/70">
+              파카(Parker), 노그린(IMI), 공압전문메이커(SNS Pneumatic),
+              케이시시공압(KCC) 등 주요 브랜드 제품 상담을 제공합니다.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
+            {PARTNERS.map((partner) => (
+              <a
+                key={partner.id}
+                href={partner.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="grid min-h-[82px] place-items-center rounded-xl border border-white/15 bg-white p-4 transition hover:border-[#8fc4ff]"
+              >
+                <Image
+                  src={partner.logo}
+                  alt={partner.name}
+                  width={132}
+                  height={42}
+                  unoptimized
+                  className="max-h-10 w-auto object-contain"
+                />
+              </a>
+            ))}
+          </div>
         </div>
       </section>
-
     </div>
   );
 }

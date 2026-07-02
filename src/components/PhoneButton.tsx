@@ -18,7 +18,7 @@ export default function PhoneButton({ size = 'md' }: { size?: 'sm' | 'md' }) {
         <>
             <button
                 onClick={() => setOpen(true)}
-                className={`bg-green-700 hover:bg-green-800 text-white font-bold ${padding} rounded-full transition shadow-lg flex items-center gap-2`}
+                className={`button-primary ${padding} flex items-center gap-2`}
             >
                 <PhoneIcon />
                 전화 문의
@@ -34,7 +34,7 @@ export default function PhoneButton({ size = 'md' }: { size?: 'sm' | 'md' }) {
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex justify-center mb-4">
-                            <div className="bg-green-100 p-4 rounded-full">
+                            <div className="bg-[var(--color-pale)] p-4 rounded-full text-[var(--color-blue)]">
                                 <PhoneIcon />
                             </div>
                         </div>
@@ -50,7 +50,7 @@ export default function PhoneButton({ size = 'md' }: { size?: 'sm' | 'md' }) {
                             </button>
                             <a
                                 href={`tel:${PHONE}`}
-                                className="flex-1 py-3 rounded-xl bg-green-700 hover:bg-green-800 text-white font-semibold transition text-center"
+                                className="button-primary flex-1"
                                 onClick={() => setOpen(false)}
                             >
                                 전화 연결

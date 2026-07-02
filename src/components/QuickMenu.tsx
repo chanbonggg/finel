@@ -19,7 +19,7 @@ export default function QuickMenu() {
 
             {/* 2. 전화 상담 버튼 (파란색) */}
             <Link
-                href="tel:010-2428-8813" // 나중에 실제 번호로 변경
+                href="tel:02-2693-3569"
                 className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:scale-110 transition flex items-center justify-center w-14 h-14"
                 aria-label="전화 상담"
             >

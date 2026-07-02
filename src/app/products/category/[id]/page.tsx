@@ -5,6 +5,7 @@ import { cache } from "react";
 import { getCategory as fetchCategory } from "@/lib/api/categories";
 import { getProducts } from "@/lib/api/products";
 import { SEO } from "@/constants/seo";
+import ProductCard from "@/components/ProductCard";
 
 type PageProps = {
     params: Promise<{ id: string }>;
@@ -63,67 +64,34 @@ export default async function CategoryPage({ params }: PageProps) {
     }
 
     return (
-        <div className="py-10">
-            {/* 헤더 섹션 */}
-            <section className="text-center mb-12 px-4">
+        <div className="site-section">
+            <div className="site-container">
+            <section className="mb-8">
                 <Link
                     href="/products"
-                    className="inline-block text-sm text-gray-500 hover:text-gray-900 mb-6"
+                    className="mb-6 inline-flex text-sm font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]"
                 >
                     ← 전체 제품 보기
                 </Link>
-                <h1 className="text-4xl font-bold mb-4">{category.name}</h1>
-                <p className="text-gray-600">
+                <p className="site-eyebrow">Category</p>
+                <h1 className="site-title">{category.name}</h1>
+                <p className="site-copy mt-4">
                     {SEO.siteNameKo}의 {category.name} 제품 라인업입니다.
                 </p>
             </section>
 
-            {/* 제품 리스트 그리드 */}
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
+            <section className="grid grid-cols-3 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
                 {category.products.length === 0 && (
-                    <div className="col-span-full text-center py-10 bg-gray-50 rounded-xl">
+                    <div className="surface-card col-span-full p-8 text-center text-[var(--color-muted)]">
                         등록된 제품이 없습니다.
                     </div>
                 )}
 
                 {category.products.map((product) => (
-                    <Link
-                        key={product.id}
-                        href={`/products/${product.id}`}
-                        className="border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition duration-300 bg-white group flex flex-col"
-                    >
-                        {/* 이미지 영역 */}
-                        <div className="h-60 bg-blue-50 flex items-center justify-center relative overflow-hidden">
-                            {product.imageUrl ? (
-                                <img
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
-                                />
-                            ) : (
-                                <span className="text-gray-400 font-bold text-xl group-hover:scale-110 transition duration-500">
-                                    No Image
-                                </span>
-                            )}
-
-                            {/* 카테고리 뱃지 */}
-                            <span className="absolute top-4 left-4 bg-white/90 text-xs font-bold px-3 py-1 rounded-full shadow-sm text-gray-700">
-                                {category.name}
-                            </span>
-                        </div>
-
-                        {/* 제품 정보 영역 */}
-                        <div className="p-6 flex flex-col flex-grow">
-                            <div className="text-blue-600 text-sm font-bold mb-2 uppercase tracking-wide">
-                                Spec: {product.spec}
-                            </div>
-                            <h2 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition">
-                                {product.name}
-                            </h2>
-                        </div>
-                    </Link>
+                    <ProductCard key={product.id} product={product} categoryLabel={category.name} />
                 ))}
             </section>
+            </div>
         </div>
     );
 }

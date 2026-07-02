@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import PhoneButton from '@/components/PhoneButton';
 import { useSearchParams } from 'next/navigation';
 import { getProducts } from '@/lib/api/products';
 import { createInquiry } from '@/lib/api/inquiries';
@@ -123,56 +122,70 @@ function ContactContent() {
     };
 
     return (
-        <div className="max-w-3xl mx-auto py-10 px-4">
-            <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
-                <p className="text-gray-600 mb-6">
-                    제품 도입을 위한 전문 상담을 신청하세요.<br />
-                    담당자가 확인 후 신속하게 연락드리겠습니다.
+        <div className="site-section">
+            <div className="site-container grid grid-cols-[0.82fr_1.18fr] items-start gap-6 max-lg:grid-cols-1">
+            <aside className="surface-card-lg p-7">
+                <p className="site-eyebrow">Contact</p>
+                <h1 className="site-title">견적 및 제휴 문의</h1>
+                <p className="site-copy mt-4">
+                    제품 도입을 위한 전문 상담을 신청하세요. 담당자가 확인 후
+                    신속하게 연락드립니다.
                 </p>
-                <div className="flex justify-center">
-                    <PhoneButton size="sm" />
-                </div>
-            </div>
 
-            <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-2xl p-6 md:p-12 shadow-lg relative">
+                <div className="mt-7 grid gap-3">
+                    <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-pale)] p-4">
+                        <span className="mb-1 block text-xs font-black text-[var(--color-muted)]">전화 문의</span>
+                        <a href="tel:02-2693-3569" className="font-black text-[var(--color-ink)]">02-2693-3569</a>
+                    </div>
+                    <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-pale)] p-4">
+                        <span className="mb-1 block text-xs font-black text-[var(--color-muted)]">팩스</span>
+                        <span className="font-black text-[var(--color-ink)]">032-232-8823</span>
+                    </div>
+                    <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-pale)] p-4">
+                        <span className="mb-1 block text-xs font-black text-[var(--color-muted)]">주소</span>
+                        <span className="break-keep font-black text-[var(--color-ink)]">인천광역시 동구 방축로 37번길 30, 2동 206호</span>
+                    </div>
+                </div>
+            </aside>
+
+            <form onSubmit={handleSubmit} className="surface-card-lg relative p-6 md:p-8">
                 {/* Honeypot */}
                 <div className="absolute opacity-0 -z-10 w-0 h-0 overflow-hidden">
                     <input type="text" name="honey" value={formData.honey} onChange={handleChange} tabIndex={-1} autoComplete="off" />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">담당자 성함 *</label>
-                        <input type="text" name="name" required value={formData.name} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="홍길동" />
+                        <label className="mb-2 block text-sm font-black text-[var(--color-body)]">담당자 성함 *</label>
+                        <input type="text" name="name" required value={formData.name} onChange={handleChange} className="form-field" placeholder="홍길동" />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">회사명 / 단체명</label>
-                        <input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="(주)우리회사" />
+                        <label className="mb-2 block text-sm font-black text-[var(--color-body)]">회사명 / 단체명</label>
+                        <input type="text" name="company" value={formData.company} onChange={handleChange} className="form-field" placeholder="(주)우리회사" />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">연락처 *</label>
-                        <input type="tel" name="phone" required value={formData.phone} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="010-1234-5678" />
+                        <label className="mb-2 block text-sm font-black text-[var(--color-body)]">연락처 *</label>
+                        <input type="tel" name="phone" required value={formData.phone} onChange={handleChange} className="form-field" placeholder="010-1234-5678" />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">이메일 (선택)</label>
-                        <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="help@company.com" />
+                        <label className="mb-2 block text-sm font-black text-[var(--color-body)]">이메일 (선택)</label>
+                        <input type="email" name="email" value={formData.email} onChange={handleChange} className="form-field" placeholder="help@company.com" />
                     </div>
                 </div>
 
                 {/* 4. [NEW] 관심 제품 선택 (DB 데이터 연동) */}
-                <div className="mb-8">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">관심 제품 선택 *</label>
+                <div className="mb-6">
+                    <label className="mb-2 block text-sm font-black text-[var(--color-body)]">관심 제품 선택 *</label>
                     <div className="relative">
                         <select
                             name="product"
                             required
                             value={formData.product}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 rounded-lg p-3 appearance-none bg-white cursor-pointer"
+                            className="form-field appearance-none cursor-pointer"
                         >
                             <option value="" disabled>문의하실 제품을 선택해주세요 (클릭)</option>
 
@@ -189,7 +202,7 @@ function ContactContent() {
                             ))}
                             <option value="기타">기타 (직접 입력)</option>
                         </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[var(--color-muted)]">
                             <svg className="h-5 w-5 fill-current" viewBox="0 0 20 20">
                                 <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
                             </svg>
@@ -197,22 +210,23 @@ function ContactContent() {
                     </div>
                 </div>
 
-                <div className="mb-8">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">문의 내용 *</label>
-                    <textarea name="message" rows={5} required value={formData.message} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="문의 내용을 입력하세요." />
+                <div className="mb-6">
+                    <label className="mb-2 block text-sm font-black text-[var(--color-body)]">문의 내용 *</label>
+                    <textarea name="message" rows={5} required value={formData.message} onChange={handleChange} className="form-field min-h-36 resize-y" placeholder="모델명, 수량, 사용 환경, 필요한 납기 등을 입력해주세요." />
                 </div>
 
-                <div className="mb-8">
-                    <div className="flex items-center gap-2 mb-2">
-                        <input type="checkbox" id="privacy" checked={formData.agreed} onChange={handleCheckbox} className="w-5 h-5 cursor-pointer" />
-                        <label htmlFor="privacy" className="text-sm font-bold text-gray-900 cursor-pointer select-none">[필수] 개인정보 수집 및 이용에 동의합니다.</label>
+                <div className="mb-6">
+                    <div className="flex items-start gap-2 mb-2">
+                        <input type="checkbox" id="privacy" checked={formData.agreed} onChange={handleCheckbox} className="mt-0.5 w-5 h-5 cursor-pointer" />
+                        <label htmlFor="privacy" className="cursor-pointer select-none text-sm font-black leading-relaxed text-[var(--color-ink)]">[필수] 개인정보 수집 및 이용에 동의합니다.</label>
                     </div>
                 </div>
 
-                <button type="submit" disabled={isSubmitting} className={`w-full text-white font-bold py-4 rounded-xl text-lg shadow-lg ${isSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                <button type="submit" disabled={isSubmitting} className={`button-primary w-full ${isSubmitting ? 'opacity-60' : ''}`}>
                     {isSubmitting ? '전송 중...' : '문의하기'}
                 </button>
             </form>
+            </div>
         </div>
     );
 }

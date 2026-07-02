@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FineL 문의 프로토타입</title>
+  <style>
+    :root {
+      --ink: #141416; --body: #303236; --muted: #6f737a; --line: #dde1e7;
+      --blue: #0066cc; --black: #050506; --paper: #f5f7fa; --panel: #fff; --pale: #eef3f8;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); }
+    a { color: inherit; text-decoration: none; }
+    .container { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .header { background: var(--black); color: #fff; }
+    .header-inner { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+    .brand { font-size: 19px; font-weight: 900; }
+    .nav { display: flex; gap: 24px; color: rgba(255,255,255,.76); font-size: 14px; }
+    .section { padding: 62px 0; }
+    .contact-grid { display: grid; grid-template-columns: .82fr 1.18fr; gap: 22px; align-items: start; }
+    .eyebrow { margin: 0 0 12px; color: var(--blue); font-size: 15px; font-weight: 900; }
+    .page-title { margin: 0; font-size: clamp(38px, 5vw, 58px); line-height: 1.06; font-weight: 900; }
+    .page-copy { margin: 18px 0 0; color: var(--body); font-size: 18px; line-height: 1.58; }
+    .info-card, .form-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      padding: 26px;
+    }
+    .info-list { display: grid; gap: 12px; margin-top: 28px; }
+    .info-item { border: 1px solid var(--line); border-radius: 12px; background: var(--pale); padding: 16px; }
+    .info-label { display: block; color: var(--muted); font-size: 13px; font-weight: 800; margin-bottom: 5px; }
+    .info-value { font-weight: 900; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .field.full { grid-column: 1 / -1; }
+    label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 900; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 13px 14px;
+      font-size: 15px;
+      outline: 0;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    .button {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid var(--blue);
+      background: var(--blue);
+      color: #fff;
+      padding: 0 18px;
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .submit-row { display: flex; justify-content: flex-end; margin-top: 20px; }
+    @media (max-width: 900px) {
+      .nav { display: none; }
+      .contact-grid, .form-grid { grid-template-columns: 1fr; }
+      .submit-row .button { width: 100%; }
+    }
+    @media (max-width: 560px) { .container { width: min(100% - 24px, 1180px); } }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a class="brand" href="homepage-main.html">FineL Pneumatics</a>
+      <nav class="nav">
+        <a href="products-list.html">제품</a>
+        <a href="about.html">회사 소개</a>
+        <a href="contact.html">문의</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container contact-grid">
+      <aside class="info-card">
+        <p class="eyebrow">Contact</p>
+        <h1 class="page-title">견적 및 제휴 문의</h1>
+        <p class="page-copy">제품 도입을 위한 전문 상담을 신청하세요. 담당자가 확인 후 신속하게 연락드립니다.</p>
+        <div class="info-list">
+          <div class="info-item"><span class="info-label">전화 문의</span><span class="info-value">02-2693-3569</span></div>
+          <div class="info-item"><span class="info-label">팩스</span><span class="info-value">032-232-8823</span></div>
+          <div class="info-item"><span class="info-label">주소</span><span class="info-value">인천광역시 동구 방축로 37번길 30, 2동 206호</span></div>
+        </div>
+      </aside>
+
+      <form class="form-card">
+        <div class="form-grid">
+          <div class="field">
+            <label for="name">담당자 성함 *</label>
+            <input id="name" type="text" placeholder="홍길동">
+          </div>
+          <div class="field">
+            <label for="company">회사명 / 단체명</label>
+            <input id="company" type="text" placeholder="(주)우리회사">
+          </div>
+          <div class="field">
+            <label for="phone">연락처 *</label>
+            <input id="phone" type="tel" placeholder="010-1234-5678">
+          </div>
+          <div class="field">
+            <label for="email">이메일</label>
+            <input id="email" type="email" placeholder="help@company.com">
+          </div>
+          <div class="field full">
+            <label for="product">관심 제품 *</label>
+            <select id="product">
+              <option>문의하실 제품을 선택해주세요</option>
+              <option>솔레노이드 밸브</option>
+              <option>컴팩트 실린더</option>
+              <option>원터치 피팅</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="message">문의 내용 *</label>
+            <textarea id="message" placeholder="모델명, 수량, 사용 환경, 필요한 납기 등을 입력해주세요."></textarea>
+          </div>
+        </div>
+        <div class="submit-row">
+          <button class="button" type="button">문의하기</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

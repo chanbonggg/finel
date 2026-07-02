@@ -121,8 +121,8 @@ export default function ProductSearch() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="제품 검색..."
-                    className="w-36 md:w-48 px-3 py-1.5 rounded-lg bg-gray-700 text-white text-sm
-                               border border-gray-600 focus:border-blue-400 focus:ring-1 focus:ring-blue-400
+                    className="w-36 md:w-48 px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm
+                               border border-white/15 focus:border-blue-300 focus:ring-1 focus:ring-blue-300
                                outline-none transition placeholder-gray-400 mr-2"
                 />
             )}
@@ -130,7 +130,7 @@ export default function ProductSearch() {
             {/* 돋보기 아이콘 버튼 */}
             <button
                 onClick={handleToggle}
-                className="p-1.5 rounded-lg hover:bg-gray-700 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 transition"
                 aria-label="제품 검색"
             >
                 <svg
@@ -178,7 +178,7 @@ export default function ProductSearch() {
                                                     alt={product.name}
                                                     width={40}
                                                     height={40}
-                                                    className="w-full h-full object-cover"
+                                                    className="h-full w-full object-contain p-1"
                                                 />
                                             </div>
                                         ) : (
@@ -202,10 +202,10 @@ export default function ProductSearch() {
 
                                         {/* 제품 정보 */}
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-800 truncate">
+                                            <p className="line-clamp-2-safe text-sm font-bold text-gray-800">
                                                 {product.name}
                                             </p>
-                                            <p className="text-xs text-gray-500">
+                                            <p className="line-clamp-2-safe text-xs text-gray-500">
                                                 {product.category}
                                             </p>
                                         </div>

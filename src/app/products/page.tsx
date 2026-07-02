@@ -1,24 +1,22 @@
 'use client'; // 1. 데이터를 가져오려면(fetch) 클라이언트 컴포넌트여야 합니다.
 
 import { useState, useEffect, useMemo } from 'react'; // React 기능 가져오기
-import Link from "next/link";
-import { useSearchParams, useRouter } from 'next/navigation';
+import Image from "next/image";
 import { PARTNERS } from '@/constants/partners';
 import { getProducts, type Product } from '@/lib/api/products';
 import type { Category } from '@/lib/api/types';
+import ProductCard from '@/components/ProductCard';
 
 export default function ProductsPage() {
     // 2. [변경된 부분] 가짜 데이터 대신 '빈 통(State)'을 만듭니다.
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<number | 'all'>('all');
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const ITEMS_PER_PAGE = 9;
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const selectedCategory = searchParams.get('category') || 'all';
 
     // 3. [변경된 부분] 페이지가 열리면 서버에서 데이터를 가져옵니다.
     useEffect(() => {
@@ -49,8 +47,7 @@ export default function ProductsPage() {
     // 회사 선택 핸들러
     const handleCompanyClick = (id: number | 'all') => {
         setSelectedCompanyId(id);
-        // 회사가 바뀌면 카테고리 선택을 초기화 ('All'로)
-        router.replace('/products');
+        setSelectedCategory('all');
         setCurrentPage(1);
     };
 
@@ -91,19 +88,24 @@ export default function ProductsPage() {
 
     const categoryLinkClass = (categoryName: string) =>
         selectedCategory === categoryName
-            ? "px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-bold"
-            : "px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm font-bold hover:bg-gray-200 transition";
+            ? "appearance-none rounded-full border border-[var(--color-black)] bg-[var(--color-black)] px-4 py-2 font-sans text-sm font-black leading-normal text-white"
+            : "appearance-none rounded-full border border-[var(--color-line)] bg-white px-4 py-2 font-sans text-sm font-black leading-normal text-[var(--color-body)] transition hover:border-[var(--color-blue)]";
+
+    const handleCategoryClick = (categoryName: string) => {
+        setSelectedCategory(categoryName);
+        setCurrentPage(1);
+    };
 
     // 로딩 중일 때 보여줄 화면
     if (loading) {
-        return <div className="p-20 text-center text-gray-500">제품 목록을 불러오는 중...</div>;
+        return <div className="site-container site-section text-center text-[var(--color-muted)]">제품 목록을 불러오는 중...</div>;
     }
 
     if (loadError) {
         return (
-            <div className="p-20 text-center">
-                <p className="text-gray-700">제품 목록을 불러오지 못했습니다.</p>
-                <button type="button" onClick={() => window.location.reload()} className="mt-4 text-blue-600 font-semibold hover:underline">
+            <div className="site-container site-section text-center">
+                <p className="text-[var(--color-body)]">제품 목록을 불러오지 못했습니다.</p>
+                <button type="button" onClick={() => window.location.reload()} className="button-secondary mt-4">
                     다시 시도
                 </button>
             </div>
@@ -111,106 +113,74 @@ export default function ProductsPage() {
     }
 
     return (
-        <div className="py-10">
+        <div className="site-section">
+            <div className="site-container">
+                <section className="mb-8">
+                    <p className="site-eyebrow">Products</p>
+                    <h1 className="site-title">공압 부품 제품 목록</h1>
+                    <p className="site-copy mt-4 max-w-3xl">
+                        브랜드, 제품군, 모델명 기준으로 필요한 제품을 확인하고 상세 페이지에서
+                        스펙과 상담 정보를 이어볼 수 있습니다.
+                    </p>
+                </section>
 
-            {/* 헤더 섹션 */}
-            <section className="text-center mb-16">
-                <h1 className="text-4xl font-bold mb-4">Products Lineup</h1>
-                <p className="text-gray-600">
-                    고객의 비즈니스 환경에 최적화된 다양한 솔루션을 만나보세요.<br />
-                    세부 스펙 변경 및 커스텀 제작은 별도 문의 부탁드립니다.
-                </p>
-            </section>
-
-            {/* 회사 선택 (아이콘) */}
-            <section className="flex flex-wrap justify-center gap-4 mb-10 px-4">
-                {PARTNERS.map((partner) => (
-                    <button
-                        key={partner.id}
-                        onClick={() => handleCompanyClick(partner.id)}
-                        className={`h-16 w-32 p-2 rounded-xl border-2 transition flex items-center justify-center bg-white ${selectedCompanyId === partner.id
-                                ? 'border-blue-600 ring-2 ring-blue-100 shadow-md'
-                                : 'border-gray-200 hover:border-blue-400 hover:shadow-sm'
-                            }`}
-                        title={partner.name}
-                    >
-                        <img
-                            src={partner.logo}
-                            alt={partner.name}
-                            className="max-w-full max-h-full object-contain"
-                        />
-                    </button>
-                ))}
-            </section>
-
-            {/* Category navigation */}
-            {selectedCompanyId !== 'all' && (
-                <section className="flex flex-wrap justify-center gap-3 px-4 mb-12">
-                    <Link href="/products" className={categoryLinkClass('all')}>
-                        All
-                    </Link>
-                    {categoryOptions.map((category) => (
-                        <Link
-                            key={category.id}
-                            href={`/products/category/${category.id}`}
-                            className={categoryLinkClass(category.name)}
+                <section className="mb-7 grid grid-cols-6 gap-3 max-lg:grid-cols-3 max-sm:grid-cols-2">
+                    {PARTNERS.map((partner) => (
+                        <button
+                            key={partner.id}
+                            onClick={() => handleCompanyClick(partner.id)}
+                            className={`grid min-h-20 place-items-center rounded-xl border bg-white p-2 transition ${selectedCompanyId === partner.id
+                                ? 'border-[var(--color-blue)] bg-[#f7fbff]'
+                                : 'border-[var(--color-line)] hover:border-[var(--color-blue)]'
+                                }`}
+                            title={partner.name}
                         >
-                            {category.name}
-                        </Link>
+                            <Image
+                                src={partner.logo}
+                                alt={partner.name}
+                                width={150}
+                                height={54}
+                                unoptimized
+                                className="max-h-12 w-[82%] object-contain"
+                            />
+                        </button>
                     ))}
                 </section>
-            )}
 
-            {/* 제품 리스트 그리드 */}
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
-                {/* 제품이 하나도 없을 때 안내 메시지 */}
-                {displayedProducts.length === 0 && (
-                    <div className="col-span-full text-center py-10 bg-gray-50 rounded-xl">
-                        등록된 제품이 아직 없습니다. 관리자 페이지에서 추가해주세요.
-                    </div>
+                {selectedCompanyId !== 'all' && (
+                    <section className="mb-8 flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => handleCategoryClick('all')}
+                            className={categoryLinkClass('all')}
+                        >
+                            All
+                        </button>
+                        {categoryOptions.map((category) => (
+                            <button
+                                key={category.id}
+                                type="button"
+                                onClick={() => handleCategoryClick(category.name)}
+                                className={categoryLinkClass(category.name)}
+                            >
+                                {category.name}
+                            </button>
+                        ))}
+                    </section>
                 )}
 
-                {displayedProducts.map((product) => (
-                    <Link
-                        key={product.id}
-                        href={`/products/${product.id}`}
-                        className="border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition duration-300 bg-white group flex flex-col"
-                    >
-                        {/* 1. 제품 이미지 영역 */}
-                        {/* 이미지가 있으면 이미지 표시, 없으면 파란 박스 표시 */}
-                        <div className="h-60 bg-blue-50 flex items-center justify-center relative overflow-hidden">
-                            {product.imageUrl ? (
-                                <img
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
-                                />
-                            ) : (
-                                <span className="text-gray-400 font-bold text-xl group-hover:scale-110 transition duration-500">
-                                    No Image
-                                </span>
-                            )}
-
-                            {/* 카테고리 뱃지 */}
-                            <span className="absolute top-4 left-4 bg-white/90 text-xs font-bold px-3 py-1 rounded-full shadow-sm text-gray-700">
-                                {product.category}
-                            </span>
+                <section className="grid grid-cols-3 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
+                    {displayedProducts.length === 0 && (
+                        <div className="surface-card col-span-full p-8 text-center text-[var(--color-muted)]">
+                            등록된 제품이 아직 없습니다. 관리자 페이지에서 추가해주세요.
                         </div>
+                    )}
 
-                        {/* 2. 제품 정보 영역 */}
-                        <div className="p-6 flex flex-col flex-grow">
-                            {/* 스펙 강조 */}
-                            <div className="text-blue-600 text-sm font-bold mb-2 uppercase tracking-wide">
-                                Spec: {product.spec}
-                            </div>
-
-                            <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition">
-                                {product.name}
-                            </h3>
-                        </div>
-                    </Link>
-                ))}
-            </section>
+                    {displayedProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                </section>
+            </div>
 
             {/* 페이지네이션 */}
             {totalPages > 1 && (
@@ -218,7 +188,7 @@ export default function ProductsPage() {
                     <button
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                        className="button-secondary min-h-10 px-3 disabled:cursor-not-allowed disabled:opacity-30"
                     >
                         ‹
                     </button>
@@ -226,9 +196,9 @@ export default function ProductsPage() {
                         <button
                             key={page}
                             onClick={() => setCurrentPage(page)}
-                            className={`w-10 h-10 rounded-lg font-bold text-sm transition ${currentPage === page
-                                    ? 'bg-gray-900 text-white'
-                                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            className={`h-10 w-10 rounded-lg text-sm font-black transition ${currentPage === page
+                                    ? 'bg-[var(--color-black)] text-white'
+                                    : 'border border-[var(--color-line)] bg-white text-[var(--color-body)] hover:bg-[var(--color-pale)]'
                                 }`}
                         >
                             {page}
@@ -237,7 +207,7 @@ export default function ProductsPage() {
                     <button
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                        className="button-secondary min-h-10 px-3 disabled:cursor-not-allowed disabled:opacity-30"
                     >
                         ›
                     </button>

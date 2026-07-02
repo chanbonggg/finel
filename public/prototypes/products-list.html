@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FineL 제품 목록 프로토타입</title>
+  <style>
+    :root {
+      --ink: #141416;
+      --body: #303236;
+      --muted: #6f737a;
+      --line: #dde1e7;
+      --blue: #0066cc;
+      --blue-dark: #004f9f;
+      --black: #050506;
+      --paper: #f5f7fa;
+      --panel: #ffffff;
+      --pale: #eef3f8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    a { color: inherit; text-decoration: none; }
+    .container { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .header { background: var(--black); color: #fff; }
+    .header-inner { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+    .brand { font-size: 19px; font-weight: 900; }
+    .nav { display: flex; gap: 24px; color: rgba(255,255,255,.76); font-size: 14px; }
+    .section { padding: 62px 0; }
+    .eyebrow { margin: 0 0 12px; color: var(--blue); font-size: 15px; font-weight: 900; }
+    .page-title { margin: 0; font-size: clamp(38px, 5vw, 58px); line-height: 1.06; letter-spacing: 0; font-weight: 900; }
+    .page-copy { max-width: 720px; margin: 18px 0 0; color: var(--body); font-size: 18px; line-height: 1.58; }
+    .toolbar {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .search-box {
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 0 16px;
+      font-size: 16px;
+      outline: 0;
+    }
+    .button {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0 18px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .brand-filter {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .brand-chip {
+      min-height: 64px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--body);
+      font-weight: 900;
+    }
+    .brand-chip.active { border-color: var(--blue); color: var(--blue-dark); background: #f7fbff; }
+    .category-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+    .category-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      padding: 9px 13px;
+      color: var(--body);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .category-pill.active { background: var(--black); color: #fff; border-color: var(--black); }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .product-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .product-image {
+      min-height: 210px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #fff 0%, var(--pale) 100%);
+      border-bottom: 1px solid var(--line);
+      color: #9aa6b6;
+      font-size: 42px;
+      font-weight: 900;
+    }
+    .product-body { padding: 20px; }
+    .product-tag { display: block; color: var(--blue-dark); font-size: 12px; font-weight: 900; margin-bottom: 9px; }
+    .product-title { margin: 0 0 8px; font-size: 21px; line-height: 1.25; }
+    .product-desc { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    @media (max-width: 900px) {
+      .nav { display: none; }
+      .toolbar, .product-grid { grid-template-columns: 1fr; }
+      .brand-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .container { width: min(100% - 24px, 1180px); }
+      .brand-filter { grid-template-columns: 1fr; }
+      .button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a class="brand" href="homepage-main.html">FineL Pneumatics</a>
+      <nav class="nav">
+        <a href="products-list.html">제품</a>
+        <a href="about.html">회사 소개</a>
+        <a href="contact.html">문의</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <p class="eyebrow">Products</p>
+        <h1 class="page-title">공압 부품 제품 목록</h1>
+        <p class="page-copy">브랜드, 제품군, 모델명 기준으로 필요한 제품을 확인하고 상세 페이지에서 스펙과 상담 정보를 이어볼 수 있습니다.</p>
+
+        <div class="toolbar">
+          <input class="search-box" type="search" placeholder="모델명, 브랜드, 제품군 검색">
+          <a class="button primary" href="contact.html">견적 문의</a>
+        </div>
+
+        <div class="brand-filter" aria-label="브랜드 필터">
+          <a class="brand-chip active" href="#">All</a>
+          <a class="brand-chip" href="#">Parker</a>
+          <a class="brand-chip" href="#">IMI</a>
+          <a class="brand-chip" href="#">SNS</a>
+          <a class="brand-chip" href="#">KCC</a>
+          <a class="brand-chip" href="#">CYPAG</a>
+        </div>
+
+        <div class="category-row" aria-label="제품군 필터">
+          <a class="category-pill active" href="#">전체</a>
+          <a class="category-pill" href="#">방향 제어 밸브</a>
+          <a class="category-pill" href="#">에어 실린더</a>
+          <a class="category-pill" href="#">피팅 / 튜브</a>
+          <a class="category-pill" href="#">FRL</a>
+        </div>
+
+        <div class="product-grid">
+          <a class="product-card" href="product-detail.html">
+            <div class="product-image">V</div>
+            <div class="product-body">
+              <span class="product-tag">방향 제어 밸브 · DC 24V</span>
+              <h2 class="product-title">솔레노이드 밸브</h2>
+              <p class="product-desc">포트 수, 전압, 설치 환경 기준으로 상담 가능한 주력 제품입니다.</p>
+            </div>
+          </a>
+          <a class="product-card" href="product-detail.html">
+            <div class="product-image">C</div>
+            <div class="product-body">
+              <span class="product-tag">에어 실린더 · Compact</span>
+              <h2 class="product-title">컴팩트 실린더</h2>
+              <p class="product-desc">보어, 스트로크, 장착 방식 기준으로 제품을 확인합니다.</p>
+            </div>
+          </a>
+          <a class="product-card" href="product-detail.html">
+            <div class="product-image">F</div>
+            <div class="product-body">
+              <span class="product-tag">피팅 / 튜브 · One-touch</span>
+              <h2 class="product-title">원터치 피팅</h2>
+              <p class="product-desc">나사 규격, 외경, 재질 조건을 비교할 수 있습니다.</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

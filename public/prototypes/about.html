@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FineL 회사 소개 프로토타입</title>
+  <style>
+    :root {
+      --ink: #141416; --body: #303236; --muted: #6f737a; --line: #dde1e7;
+      --blue: #0066cc; --black: #050506; --paper: #f5f7fa; --panel: #fff; --pale: #eef3f8;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); }
+    a { color: inherit; text-decoration: none; }
+    .container { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .header { background: var(--black); color: #fff; }
+    .header-inner { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+    .brand { font-size: 19px; font-weight: 900; }
+    .nav { display: flex; gap: 24px; color: rgba(255,255,255,.76); font-size: 14px; }
+    .section { padding: 62px 0; }
+    .hero-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      padding: clamp(28px, 5vw, 54px);
+    }
+    .eyebrow { margin: 0 0 12px; color: var(--blue); font-size: 15px; font-weight: 900; }
+    .page-title { margin: 0; font-size: clamp(38px, 5vw, 58px); line-height: 1.06; font-weight: 900; }
+    .page-copy { max-width: 760px; margin: 18px 0 0; color: var(--body); font-size: 18px; line-height: 1.58; }
+    .split {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 22px;
+      margin-top: 22px;
+    }
+    .surface-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      padding: 24px;
+    }
+    .section-title { margin: 0 0 16px; font-size: 30px; line-height: 1.16; font-weight: 900; }
+    .body-copy { margin: 0; color: var(--body); font-size: 16px; line-height: 1.58; }
+    .brand-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .brand-card {
+      min-height: 78px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--pale);
+      font-size: 17px;
+      font-weight: 900;
+    }
+    .map-panel {
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fff 0%, var(--pale) 100%);
+      color: var(--muted);
+      font-weight: 900;
+    }
+    .address-list { display: grid; gap: 9px; margin-top: 18px; color: var(--body); }
+    @media (max-width: 900px) {
+      .nav { display: none; }
+      .split, .brand-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) { .container { width: min(100% - 24px, 1180px); } }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a class="brand" href="homepage-main.html">FineL Pneumatics</a>
+      <nav class="nav">
+        <a href="products-list.html">제품</a>
+        <a href="about.html">회사 소개</a>
+        <a href="contact.html">문의</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="hero-card">
+          <p class="eyebrow">About FineL</p>
+          <h1 class="page-title">산업용 공압 부품 전문 기업</h1>
+          <p class="page-copy">신뢰할 수 있는 기술과 검증된 안정성을 바탕으로 제품 도입 상담부터 견적 및 제휴 문의까지 책임 있게 지원합니다.</p>
+        </div>
+
+        <div class="split">
+          <section class="surface-card">
+            <h2 class="section-title">주요 파트너사</h2>
+            <div class="brand-grid">
+              <a class="brand-card" href="#">Parker</a>
+              <a class="brand-card" href="#">IMI Norgren</a>
+              <a class="brand-card" href="#">SNS</a>
+              <a class="brand-card" href="#">KCC</a>
+              <a class="brand-card" href="#">CYPAG</a>
+              <a class="brand-card" href="#">SMC</a>
+            </div>
+          </section>
+
+          <section class="surface-card">
+            <h2 class="section-title">오시는 길</h2>
+            <div class="map-panel">지도 영역</div>
+            <div class="address-list">
+              <span><strong>주소:</strong> 인천광역시 동구 방축로 37번길 30, 2동 206호</span>
+              <span><strong>전화:</strong> 02-2693-3569</span>
+              <span><strong>팩스:</strong> 032-232-8823</span>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

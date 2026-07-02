@@ -3,27 +3,24 @@ import ProductSearch from '@/components/ProductSearch';
 
 export default function Navbar() {
   return (
-    <nav className="bg-gray-800 text-white p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        {/* 로고 영역 */}
-       <Link href="/" className="text-2xl font-sans font-bold">
-        FL FineL
-      </Link>
+    <nav className="sticky top-0 z-40 bg-[var(--color-black)] text-white">
+      <div className="site-container flex min-h-[58px] items-center justify-between gap-5">
+        <Link href="/" className="shrink-0 text-[19px] font-black tracking-normal">
+          FineL Pneumatics
+        </Link>
 
-
-        {/* 메뉴 링크 영역 */}
-        <ul className="flex items-center space-x-6">
+        <ul className="flex min-w-0 items-center gap-3 text-sm text-white/75 md:gap-6">
           <li>
             <ProductSearch />
           </li>
-          <li>
-            <Link href="/about" className="hover:text-gray-300">회사소개</Link>
+          <li className="hidden sm:block">
+            <Link href="/products" className="hover:text-white">제품</Link>
           </li>
-          <li>
-            <Link href="/products" className="hover:text-gray-300">제품소개</Link>
+          <li className="hidden sm:block">
+            <Link href="/about" className="hover:text-white">회사 소개</Link>
           </li>
-          <li>
-            <Link href="/contact" className="hover:text-gray-300">문의하기</Link>
+          <li className="hidden sm:block">
+            <Link href="/contact" className="hover:text-white">문의</Link>
           </li>
         </ul>
       </div>

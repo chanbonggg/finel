@@ -78,10 +78,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
-        <Navbar />
-        <main className="min-h-screen container mx-auto p-4">{children}</main>
-        <QuickMenu />
-        <Footer />
+        <div className="site-shell">
+          <Navbar />
+          <main className="min-h-screen">{children}</main>
+          <QuickMenu />
+          <Footer />
+        </div>
       </body>
     </html>
   );
