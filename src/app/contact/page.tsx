@@ -128,8 +128,8 @@ function ContactContent() {
                 <p className="site-eyebrow">Contact</p>
                 <h2 className="site-title">견적 문의</h2>
                 <p className="site-copy mt-4">
-                    제품 도입을 위한 전문 상담을 신청하세요. 담당자가 확인 후
-                    신속하게 연락드립니다.
+                    제품 도입을 위한 전문 상담을 신청하세요.
+                    <br />담당자가 확인 후 신속하게 연락드립니다.
                 </p>
 
                 <div className="mt-7 grid gap-3">
