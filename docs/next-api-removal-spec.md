@@ -45,7 +45,7 @@ rg "@/lib/admin-auth|jwtVerify|SignJWT" src
 Spring API용 공통 client 외 상대 경로 fetch가 없다.
 Next.js 화면과 서버 컴포넌트에서 Prisma import가 없다.
 Next.js가 JWT_SECRET으로 토큰을 직접 검증하지 않는다.
-Cloudinary 외부 API 호출은 예외로 유지한다.
+Cloudinary 업로드는 Spring `/api/uploads/images`로 위임한다.
 ```
 
 ## 삭제 순서
@@ -107,4 +107,3 @@ Next.js build와 lint가 성공한다.
 Next.js 런타임에 JWT_SECRET이 필요 없다.
 E2E 주요 플로우가 통과한다.
 ```
-

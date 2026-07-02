@@ -3,13 +3,10 @@
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCategory, deleteCategory, getCategories } from '@/lib/api/categories';
-import { createProduct, deleteProduct, getProducts, updateProduct } from '@/lib/api/products';
+import { createProduct, deleteProduct, getProducts, updateProduct, uploadProductImage } from '@/lib/api/products';
 import type { Category, Product } from '@/lib/api/types';
 
 export type { Category, Product };
-
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 type SuccessResponse = { success: boolean; message?: string };
 type CategoryMutationResponse = SuccessResponse & { category: Category };
@@ -96,19 +93,10 @@ export function useProductAdmin() {
     const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
-        if (!CLOUD_NAME || !UPLOAD_PRESET) {
-            alert('이미지 업로드 환경 설정을 확인해 주세요.');
-            return;
-        }
         setIsUploading(true);
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('upload_preset', UPLOAD_PRESET);
-            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-            const data = await response.json() as { secure_url?: string; error?: { message?: string } };
-            if (!response.ok || !data.secure_url) throw new Error(data.error?.message || '이미지 업로드에 실패했습니다.');
-            setNewProduct(previous => ({ ...previous, imageUrl: data.secure_url! }));
+            const imageUrl = await uploadProductImage(file);
+            setNewProduct(previous => ({ ...previous, imageUrl }));
         } catch (error) {
             alert(errorDetails(error).message);
         } finally {

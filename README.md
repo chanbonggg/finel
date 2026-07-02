@@ -2,7 +2,9 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+Copy `.env.example` to `.env` and keep the local Spring API base values unless the backend runs elsewhere. Do not commit `.env` or secrets.
+
+Then run the development server:
 
 ```bash
 npm run dev

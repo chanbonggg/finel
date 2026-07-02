@@ -5,21 +5,15 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDebounce } from '@/hooks/useDebounce';
 import { translateSearchQuery } from '@/lib/searchKeywordMap';
-import { searchProducts } from '@/lib/api/products';
-
-interface SearchResult {
-    id: number;
-    name: string;
-    imageUrl: string;
-    category: string;
-}
+import { searchProducts, type Product } from '@/lib/api/products';
 
 export default function ProductSearch() {
     // --- 상태 관리 ---
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<SearchResult[]>([]);
+    const [results, setResults] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [searchError, setSearchError] = useState(false);
 
     const debouncedQuery = useDebounce(query, 300);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -30,6 +24,7 @@ export default function ProductSearch() {
     useEffect(() => {
         if (!debouncedQuery.trim()) {
             setResults([]);
+            setSearchError(false);
             return;
         }
 
@@ -38,13 +33,18 @@ export default function ProductSearch() {
 
         const fetchResults = async () => {
             setIsLoading(true);
+            setSearchError(false);
             try {
                 setResults(await searchProducts(translatedQuery, controller.signal));
             } catch (error) {
-                if (error instanceof DOMException && error.name === 'AbortError') return;
+                if (controller.signal.aborted ||
+                    (error instanceof DOMException && error.name === 'AbortError') ||
+                    (error instanceof Error && error.name === 'AbortError')) return;
                 console.error('검색 실패:', error);
+                setResults([]);
+                setSearchError(true);
             } finally {
-                setIsLoading(false);
+                if (!controller.signal.aborted) setIsLoading(false);
             }
         };
 
@@ -59,6 +59,7 @@ export default function ProductSearch() {
                 setIsOpen(false);
                 setQuery('');
                 setResults([]);
+                setSearchError(false);
             }
         };
 
@@ -73,6 +74,7 @@ export default function ProductSearch() {
                 setIsOpen(false);
                 setQuery('');
                 setResults([]);
+                setSearchError(false);
             }
         };
 
@@ -93,6 +95,7 @@ export default function ProductSearch() {
             setIsOpen(false);
             setQuery('');
             setResults([]);
+            setSearchError(false);
         } else {
             setIsOpen(true);
         }
@@ -102,6 +105,7 @@ export default function ProductSearch() {
         setIsOpen(false);
         setQuery('');
         setResults([]);
+        setSearchError(false);
         router.push(`/products/${productId}`);
     };
 
@@ -152,6 +156,10 @@ export default function ProductSearch() {
                     {isLoading ? (
                         <div className="p-4 text-center text-sm text-gray-500">
                             검색 중...
+                        </div>
+                    ) : searchError ? (
+                        <div className="p-4 text-center text-sm text-red-600" role="alert">
+                            검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
                         </div>
                     ) : results.length > 0 ? (
                         <ul className="max-h-80 overflow-y-auto">

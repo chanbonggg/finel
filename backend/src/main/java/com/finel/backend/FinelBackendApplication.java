@@ -10,4 +10,3 @@ public class FinelBackendApplication {
         SpringApplication.run(FinelBackendApplication.class, args);
     }
 }
-

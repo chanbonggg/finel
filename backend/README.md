@@ -28,6 +28,8 @@ DB_URL
 DB_USERNAME
 DB_PASSWORD
 JWT_SECRET
+AUTH_COOKIE_SECURE
+AUTH_COOKIE_DOMAIN
 MAIL_USERNAME
 MAIL_PASSWORD
 MAIL_FROM
@@ -38,3 +40,4 @@ MAIL_PORT
 
 비밀값과 운영 DB 접속 정보는 저장소에 커밋하지 않는다.
 
+로컬에서는 `AUTH_COOKIE_SECURE=false`, `AUTH_COOKIE_DOMAIN` 미설정을 사용한다. 프론트가 `www.finel.co.kr`, API가 `api.finel.co.kr`이고 Next `/admin` proxy가 인증을 확인하는 운영 구조에서는 `AUTH_COOKIE_SECURE=true`, `AUTH_COOKIE_DOMAIN=finel.co.kr`가 필요하다.

@@ -2,6 +2,9 @@ import { MetadataRoute } from "next";
 import { getSitemapData } from "@/lib/api/public-meta";
 import { getSiteUrl } from "@/lib/site-url";
 
+// API 설정과 연결 상태는 빌드 시 빈 sitemap으로 숨기지 않고 요청 시 검증한다.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
 

@@ -208,7 +208,7 @@ Prisma 모델은 `Admin`, `Category`, `Product`, `Inquiry` 네 가지다.
 - `useProductAdmin`
 
   - 제품, 카테고리, 이미지 업로드, 제품 등록/수정/삭제, 카테고리 추가/삭제 상태를 한 곳에서 관리한다.
-  - Cloudinary 공개 환경 변수 `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`가 필요하다.
+  - 이미지 업로드는 Spring `/api/uploads/images` signed upload API를 사용한다. Cloudinary secret을 `NEXT_PUBLIC_*`로 노출하지 않는다.
 - `useInquiry`
 
   - 관리자 문의 목록 조회와 삭제를 담당한다.
@@ -243,8 +243,7 @@ Prisma 모델은 `Admin`, `Category`, `Product`, `Inquiry` 네 가지다.
 - `DATABASE_URL`: Prisma PostgreSQL 연결 문자열.
 - `JWT_SECRET`: 관리자 JWT 서명/검증.
 - `EMAIL_USER`, `EMAIL_PASS`: Gmail SMTP 문의 알림 발송.
-- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`: Cloudinary 업로드용 공개 클라우드명.
-- `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`: Cloudinary unsigned upload preset.
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_FOLDER`: Spring 백엔드의 Cloudinary signed upload 설정.
 - `NEXT_PUBLIC_SITE_URL`: 명시적 사이트 URL.
 - `VERCEL_PROJECT_PRODUCTION_URL`, `VERCEL_URL`: Vercel 배포 URL fallback.
 - `GOOGLE_SITE_VERIFICATION`, `NAVER_SITE_VERIFICATION`: 검색 콘솔 인증.
@@ -302,7 +301,7 @@ contact/page.tsx
 - `src/app/api/products/[id]/route.ts`에는 `any` 기반 업데이트 객체가 있다. 타입 개선 시 Zod 스키마와 Prisma 업데이트 타입을 함께 맞춰야 한다.
 - `prisma.ts`는 개발 환경에서 전역 PrismaClient를 재사용한다. 쿼리 로그가 켜져 있어 로컬 디버깅에는 유용하지만 로그 노이즈가 있을 수 있다.
 - 문의 등록은 DB 저장 후 메일 발송 순서다. 메일 실패는 문의 저장 실패와 다르게 처리해야 한다.
-- Cloudinary 업로드는 클라이언트 훅에서 직접 호출한다. preset 권한과 이미지 공개 정책을 배포 환경에서 확인해야 한다.
+- Cloudinary 업로드는 클라이언트에서 직접 호출하지 않는다. 관리자 인증/CSRF를 통과한 Spring `/api/uploads/images` 요청만 허용한다.
 
 ## 12. 향후 문서 관리 위치
 

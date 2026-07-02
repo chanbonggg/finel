@@ -5,12 +5,8 @@ import PhoneButton from '@/components/PhoneButton';
 import { useSearchParams } from 'next/navigation';
 import { getProducts } from '@/lib/api/products';
 import { createInquiry } from '@/lib/api/inquiries';
-
-// DB에서 받아올 제품 데이터 타입 정의
-interface Product {
-    id: number;
-    name: string;
-}
+import type { Product } from '@/lib/api/products';
+import { isApiError } from '@/lib/api/client';
 
 function ContactContent() {
     const searchParams = useSearchParams();
@@ -32,14 +28,17 @@ function ContactContent() {
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [productsLoadFailed, setProductsLoadFailed] = useState(false);
 
     // 페이지가 열리면 서버에서 '진짜 제품 목록'을 가져옵니다.
     useEffect(() => {
         async function fetchProducts() {
             try {
+                setProductsLoadFailed(false);
                 setDbProducts(await getProducts());
             } catch (error) {
                 console.error("제품 목록 로딩 실패:", error);
+                setProductsLoadFailed(true);
             }
         }
         fetchProducts();
@@ -74,6 +73,11 @@ function ContactContent() {
             return;
         }
 
+        if (!formData.message.trim()) {
+            alert("문의 내용을 입력해주세요.");
+            return;
+        }
+
         if (!formData.agreed) {
             alert("개인정보 수집 및 이용에 동의해주세요.");
             return;
@@ -82,31 +86,37 @@ function ContactContent() {
         setIsSubmitting(true);
 
         try {
-            //const combinedContent = `[관심제품: ${formData.product}]\n[회사명: ${formData.company}]\n\n문의내용:\n${formData.message}`;
-
-            const res = await createInquiry({
+            await createInquiry({
                     name: formData.name,
                     email: formData.email,
-                    phone: formData.phone,
-                    product: formData.product,
+                    phoneNumber: formData.phone,
+                    productName: formData.product,
                     company: formData.company,
-                    content: formData.message,
+                    message: formData.message,
                 });
 
-            const data = await res.json();
+            alert(`문의가 성공적으로 접수되었습니다!\n담당자가 ${formData.phone}으로 곧 연락드리겠습니다.`);
+            setFormData({
+                name: '', company: '', phone: '', email: '', product: '', message: '', agreed: false, honey: ''
+            });
 
-            if (res.ok || data.inquirySaved) {
+        } catch (error) {
+            console.error("전송 에러:", error);
+
+            if (isApiError(error) && error.status === 502 && error.data?.inquirySaved === true) {
                 alert(`문의가 성공적으로 접수되었습니다!\n담당자가 ${formData.phone}으로 곧 연락드리겠습니다.`);
                 setFormData({
                     name: '', company: '', phone: '', email: '', product: '', message: '', agreed: false, honey: ''
                 });
+            } else if (isApiError(error) && error.status === 400) {
+                alert(error.message || "입력 내용을 확인해주세요.");
+            } else if (isApiError(error) && error.status === 429) {
+                alert("문의 요청이 너무 많습니다. 10분 후 다시 시도해주세요.");
+            } else if (isApiError(error) && error.status === 500) {
+                alert("문의 접수 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
             } else {
-                alert(`전송 실패: ${data.message}`);
+                alert("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
             }
-
-        } catch (error) {
-            console.error("전송 에러:", error);
-            alert("서버 연결 실패");
         } finally {
             setIsSubmitting(false);
         }
@@ -148,8 +158,8 @@ function ContactContent() {
                         <input type="tel" name="phone" required value={formData.phone} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="010-1234-5678" />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">이메일 *</label>
-                        <input type="email" name="email" required value={formData.email} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="help@company.com" />
+                        <label className="block text-sm font-bold text-gray-700 mb-2">이메일 (선택)</label>
+                        <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="help@company.com" />
                     </div>
                 </div>
 
@@ -167,7 +177,9 @@ function ContactContent() {
                             <option value="" disabled>문의하실 제품을 선택해주세요 (클릭)</option>
 
                             {/* DB에서 가져온 데이터가 없으면 로딩 중 표시 */}
-                            {dbProducts.length === 0 && <option disabled>제품 목록 불러오는 중...</option>}
+                            {dbProducts.length === 0 && (
+                                <option disabled>{productsLoadFailed ? '제품 목록을 불러오지 못했습니다' : '제품 목록 불러오는 중...'}</option>
+                            )}
 
                             {/* DB 데이터로 옵션 만들기 */}
                             {dbProducts.map((prod) => (
@@ -186,8 +198,8 @@ function ContactContent() {
                 </div>
 
                 <div className="mb-8">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">문의 내용</label>
-                    <textarea name="message" rows={5} value={formData.message} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="문의 내용을 입력하세요." />
+                    <label className="block text-sm font-bold text-gray-700 mb-2">문의 내용 *</label>
+                    <textarea name="message" rows={5} required value={formData.message} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="문의 내용을 입력하세요." />
                 </div>
 
                 <div className="mb-8">

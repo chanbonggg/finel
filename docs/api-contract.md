@@ -2321,7 +2321,7 @@ export async function apiFetch(path: string, init?: RequestInit) {
 
 주의:
 
-- Cloudinary 업로드는 백엔드 API가 아니라 외부 API다.
+- Cloudinary 업로드는 Spring `/api/uploads/images`를 통해 수행한다. 브라우저에서 Cloudinary unsigned preset을 직접 호출하지 않는다.
 - `https://api.cloudinary.com/v1_1/.../image/upload` 호출은 Spring 이전 대상이 아니다.
 - 나중에 보안을 강화하려면 Spring에서 signed upload를 발급하는 구조로 바꿀 수 있다.
 - GET/HEAD 요청에는 기본 `Content-Type`을 붙이지 않는다.

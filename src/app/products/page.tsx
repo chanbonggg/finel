@@ -4,26 +4,8 @@ import { useState, useEffect, useMemo } from 'react'; // React 기능 가져오�
 import Link from "next/link";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PARTNERS } from '@/constants/partners';
-import { getProducts } from '@/lib/api/products';
-
-// 제품 데이터 타입 정의 (DB랑 맞춰줍니다)
-interface Product {
-    id: number;
-    name: string;
-    category: string;
-    categoryId: number;
-    companyId: number; // API에서 추가된 필드
-    spec: string;
-    description: string;
-    imageUrl?: string; // 이미지는 없을 수도 있음
-    isVisible?: boolean; // 공개 여부
-}
-
-interface Category {
-    id: number | string;
-    name: string;
-    companyId?: number;
-}
+import { getProducts, type Product } from '@/lib/api/products';
+import type { Category } from '@/lib/api/types';
 
 export default function ProductsPage() {
     // 2. [변경된 부분] 가짜 데이터 대신 '빈 통(State)'을 만듭니다.
@@ -32,6 +14,7 @@ export default function ProductsPage() {
     const [selectedCompanyId, setSelectedCompanyId] = useState<number | 'all'>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const ITEMS_PER_PAGE = 9;
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -41,6 +24,7 @@ export default function ProductsPage() {
     useEffect(() => {
         async function fetchProductsAndCategories() {
             try {
+                setLoadError(false);
                 const productList = await getProducts();
                 setProducts(productList);
                 setCategories(Array.from(new Map(productList.map(product => [product.categoryId, {
@@ -48,6 +32,7 @@ export default function ProductsPage() {
                 }])).values()));
             } catch (error) {
                 console.error("제품 불러오기 실패:", error);
+                setLoadError(true);
             } finally {
                 setLoading(false); // 로딩 끝
             }
@@ -76,14 +61,8 @@ export default function ProductsPage() {
             filteredCats = categories.filter(c => c.companyId === selectedCompanyId);
         }
 
-        if (filteredCats.length > 0) {
-            return filteredCats;
-        }
-        // 카테고리 데이터가 아직 없거나 매칭이 안되면 제품 목록에서 추출 (fallback)
-        const targetProducts = selectedCompanyId === 'all' ? products : products.filter(p => p.companyId === selectedCompanyId);
-        const uniqueNames = Array.from(new Set(targetProducts.map((product) => product.category)));
-        return uniqueNames.map((name) => ({ id: name, name }));
-    }, [categories, products, selectedCompanyId]);
+        return filteredCats;
+    }, [categories, selectedCompanyId]);
 
     const filteredProducts = useMemo(() => {
         // 1. 회사 필터링
@@ -118,6 +97,17 @@ export default function ProductsPage() {
     // 로딩 중일 때 보여줄 화면
     if (loading) {
         return <div className="p-20 text-center text-gray-500">제품 목록을 불러오는 중...</div>;
+    }
+
+    if (loadError) {
+        return (
+            <div className="p-20 text-center">
+                <p className="text-gray-700">제품 목록을 불러오지 못했습니다.</p>
+                <button type="button" onClick={() => window.location.reload()} className="mt-4 text-blue-600 font-semibold hover:underline">
+                    다시 시도
+                </button>
+            </div>
+        );
     }
 
     return (
@@ -162,11 +152,7 @@ export default function ProductsPage() {
                     {categoryOptions.map((category) => (
                         <Link
                             key={category.id}
-                            href={
-                                typeof category.id === 'number'
-                                    ? `/products/category/${category.id}`
-                                    : `/products?category=${encodeURIComponent(category.name)}`
-                            }
+                            href={`/products/category/${category.id}`}
                             className={categoryLinkClass(category.name)}
                         >
                             {category.name}

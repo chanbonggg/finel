@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FineL 메인 화면 프로토타입</title>
+  <style>
+    :root {
+      --ink: #141416;
+      --body: #303236;
+      --muted: #6f737a;
+      --line: #dde1e7;
+      --blue: #0066cc;
+      --blue-dark: #004f9f;
+      --black: #050506;
+      --paper: #f5f7fa;
+      --panel: #ffffff;
+      --pale: #eef3f8;
+      --steel: #596579;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(5, 5, 6, 0.96);
+      color: #fff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .header-inner {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: var(--blue);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 14px;
+    }
+
+    .header-contact {
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 0 13px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .hero {
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-grid {
+      min-height: calc(100vh - 58px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 0.84fr);
+      gap: 44px;
+      align-items: center;
+      padding: 54px 0 46px;
+    }
+
+    .eyebrow {
+      margin: 0 0 16px;
+      color: var(--blue);
+      font-size: 15px;
+      line-height: 1.4;
+      font-weight: 900;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    .hero-title {
+      margin-bottom: 20px;
+      font-size: clamp(40px, 5vw, 64px);
+      line-height: 1.06;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    .hero-copy {
+      max-width: 650px;
+      margin-bottom: 28px;
+      color: var(--body);
+      font-size: 19px;
+      line-height: 1.62;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .button {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 0 18px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .button.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .search-bar {
+      max-width: 720px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper);
+    }
+
+    .search-bar input {
+      min-width: 0;
+      min-height: 44px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      padding: 0 12px;
+      color: var(--ink);
+      font-size: 16px;
+    }
+
+    .keyword-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .keyword {
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: var(--pale);
+      color: var(--blue-dark);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .product-panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .product-stage {
+      min-height: 350px;
+      display: grid;
+      place-items: center;
+      padding: 30px;
+      background: #eef3f8;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .machine-part {
+      width: min(420px, 100%);
+      aspect-ratio: 1.45;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .part-body {
+      width: 76%;
+      height: 35%;
+      position: relative;
+      border: 1px solid #b9c1cc;
+      border-radius: 12px;
+      background: #d7dde6;
+      box-shadow: 0 18px 34px rgba(20, 28, 38, 0.18);
+    }
+
+    .part-body::before,
+    .part-body::after {
+      content: "";
+      position: absolute;
+      top: 34%;
+      width: 21%;
+      height: 32%;
+      border: 1px solid #c1c8d2;
+      border-radius: 7px;
+      background: #f8fafc;
+    }
+
+    .part-body::before {
+      left: -16%;
+    }
+
+    .part-body::after {
+      right: -16%;
+    }
+
+    .part-port {
+      position: absolute;
+      top: -25px;
+      width: 42px;
+      height: 42px;
+      border: 1px solid #c1c8d2;
+      border-radius: 999px;
+      background: #fff;
+    }
+
+    .part-port:nth-child(1) { left: 15%; }
+    .part-port:nth-child(2) { left: 33%; }
+    .part-port:nth-child(3) { right: 33%; }
+    .part-port:nth-child(4) { right: 15%; }
+
+    .part-label {
+      position: absolute;
+      left: 22%;
+      right: 22%;
+      bottom: 18px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .product-meta {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      padding: 18px;
+    }
+
+    .product-meta strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 20px;
+    }
+
+    .product-meta span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .slide-dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .slide-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #b6c1cf;
+    }
+
+    .slide-dot.active {
+      width: 24px;
+      background: var(--blue);
+    }
+
+    .trust {
+      padding: 34px 0;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .trust-item {
+      padding: 22px;
+      border-right: 1px solid var(--line);
+    }
+
+    .trust-item:last-child {
+      border-right: 0;
+    }
+
+    .trust-item strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 18px;
+    }
+
+    .trust-item span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .section {
+      padding: 62px 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      margin-bottom: 8px;
+      font-size: clamp(28px, 3vw, 38px);
+      line-height: 1.16;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    .section-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .category-grid,
+    .product-grid,
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .product-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .category-card,
+    .product-card,
+    .catalog-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .category-card {
+      min-height: 184px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 22px;
+    }
+
+    .category-icon {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--pale);
+      color: var(--steel);
+      font-size: 23px;
+      font-weight: 900;
+    }
+
+    .category-card h3,
+    .product-card h3,
+    .catalog-card h3 {
+      margin-bottom: 7px;
+      font-size: 20px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .category-card p,
+    .product-card p,
+    .catalog-card p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .product-thumb {
+      min-height: 170px;
+      display: grid;
+      place-items: center;
+      background: var(--pale);
+      border-bottom: 1px solid var(--line);
+      color: #9aa6b6;
+      font-size: 42px;
+      font-weight: 900;
+    }
+
+    .product-info {
+      padding: 18px;
+    }
+
+    .product-tag {
+      display: block;
+      margin-bottom: 9px;
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .catalog-section {
+      background: #fff;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .catalog-card {
+      padding: 22px;
+    }
+
+    .catalog-meta {
+      display: block;
+      margin-top: 11px;
+      color: var(--steel);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .catalog-actions {
+      display: flex;
+      gap: 9px;
+      margin-top: 18px;
+    }
+
+    .catalog-actions .button {
+      min-height: 38px;
+      padding: 0 13px;
+      font-size: 14px;
+    }
+
+    .brand-section {
+      background: var(--black);
+      color: #fff;
+    }
+
+    .brand-grid-wrap {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 42px;
+      align-items: center;
+    }
+
+    .brand-section .section-desc {
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .brand-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .brand-card {
+      min-height: 82px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .brand-card img {
+      max-width: 132px;
+      max-height: 42px;
+      object-fit: contain;
+      filter: grayscale(1) brightness(0) invert(1);
+      opacity: 0.92;
+    }
+
+    .brand-card.text {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .bottom-cta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      padding: 34px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .bottom-cta h2 {
+      margin-bottom: 9px;
+      font-size: clamp(26px, 3vw, 34px);
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .bottom-cta p {
+      max-width: 650px;
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 960px) {
+      .nav {
+        display: none;
+      }
+
+      .hero-grid,
+      .brand-grid-wrap,
+      .bottom-cta {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-grid {
+        min-height: auto;
+      }
+
+      .trust-strip,
+      .product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .category-grid,
+      .catalog-grid,
+      .brand-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        align-items: start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .container {
+        width: min(100% - 24px, 1180px);
+      }
+
+      .header-inner {
+        min-height: 54px;
+      }
+
+      .brand {
+        font-size: 17px;
+      }
+
+      .header-contact {
+        display: none;
+      }
+
+      .hero-grid {
+        padding-top: 36px;
+      }
+
+      .hero-title {
+        font-size: 38px;
+      }
+
+      .hero-copy {
+        font-size: 17px;
+      }
+
+      .search-bar,
+      .trust-strip,
+      .product-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button,
+      .search-bar .button,
+      .catalog-actions .button {
+        width: 100%;
+      }
+
+      .trust-item {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .trust-item:last-child {
+        border-bottom: 0;
+      }
+
+      .product-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .catalog-actions {
+        flex-direction: column;
+      }
+
+      .bottom-cta {
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark">F</span>
+        <span>FineL Pneumatics</span>
+      </a>
+      <nav class="nav" aria-label="주요 메뉴">
+        <a href="#categories">제품군</a>
+        <a href="#products">주력 제품</a>
+        <a href="#catalogs">카탈로그</a>
+        <a href="#brands">브랜드</a>
+        <a href="#contact">문의</a>
+      </nav>
+      <a class="header-contact" href="#contact">견적 문의</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <p class="eyebrow">산업용 공압 부품 전문 기업</p>
+          <h1 class="hero-title">제품 도입 상담부터 견적 및 제휴 문의까지</h1>
+          <p class="hero-copy">
+            공압 부품과 산업용 부품을 확인하고, 필요한 제품은 전문 상담을 신청하세요.
+            담당자가 확인 후 신속하게 연락드립니다.
+          </p>
+
+          <div class="action-row" aria-label="주요 액션">
+            <a class="button primary" href="#contact">견적 및 제휴 문의</a>
+            <a class="button" href="#products">제품 보기</a>
+            <a class="button" href="tel:02-2693-3569">전화 문의</a>
+          </div>
+
+          <form class="search-bar" action="#" aria-label="제품 검색">
+            <input type="search" placeholder="모델명, 브랜드, 제품군 검색">
+            <button class="button" type="button">사진 문의</button>
+            <button class="button primary" type="submit">견적 요청</button>
+          </form>
+
+          <div class="keyword-row" aria-label="추천 검색어">
+            <span class="keyword">Parker 밸브</span>
+            <span class="keyword">SMC 실린더</span>
+            <span class="keyword">피팅 규격</span>
+            <span class="keyword">대체품 상담</span>
+          </div>
+        </div>
+
+        <a class="product-panel" href="#products" aria-label="주력 제품 상세 보기">
+          <div class="product-stage">
+            <div class="machine-part" aria-hidden="true">
+              <div class="part-body">
+                <span class="part-port"></span>
+                <span class="part-port"></span>
+                <span class="part-port"></span>
+                <span class="part-port"></span>
+                <span class="part-label"></span>
+              </div>
+            </div>
+          </div>
+          <div class="product-meta">
+            <div>
+              <strong>솔레노이드 밸브 시리즈</strong>
+              <span>방향 제어 밸브 · 5 Port · DC 24V · 주력 제품 자동 전환 영역</span>
+            </div>
+            <div class="slide-dots" aria-hidden="true">
+              <span class="slide-dot active"></span>
+              <span class="slide-dot"></span>
+              <span class="slide-dot"></span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="업무 요약">
+      <div class="container">
+        <div class="trust-strip">
+          <div class="trust-item">
+            <strong>견적 문의</strong>
+            <span>담당자 확인 후 신속 연락</span>
+          </div>
+          <div class="trust-item">
+            <strong>전문 상담</strong>
+            <span>제품 도입 상담 신청</span>
+          </div>
+          <div class="trust-item">
+            <strong>주력 제품</strong>
+            <span>공압 부품과 산업용 부품 안내</span>
+          </div>
+          <div class="trust-item">
+            <strong>지속 지원</strong>
+            <span>책임 있는 계약과 지원</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="categories" class="section">
+      <div class="container">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Product categories</p>
+            <h2 class="section-title">제품군으로 바로 찾기</h2>
+            <p class="section-desc">현장에서 많이 찾는 공압 부품군을 기준으로 빠르게 탐색할 수 있습니다.</p>
+          </div>
+          <a class="button" href="#products">전체 제품 보기</a>
+        </div>
+
+        <div class="category-grid">
+          <a class="category-card" href="/products">
+            <div>
+              <div class="category-icon">V</div>
+              <h3>방향 제어 밸브</h3>
+              <p>Solenoid · mechanical valve</p>
+            </div>
+            <p>모델명, 포트 수, 전압 기준으로 확인합니다.</p>
+          </a>
+          <a class="category-card" href="/products">
+            <div>
+              <div class="category-icon">C</div>
+              <h3>에어 실린더</h3>
+              <p>Standard · compact · rodless</p>
+            </div>
+            <p>보어, 스트로크, 장착 방식 기준으로 상담합니다.</p>
+          </a>
+          <a class="category-card" href="/products">
+            <div>
+              <div class="category-icon">F</div>
+              <h3>피팅 / 튜브</h3>
+              <p>One-touch fitting · tube</p>
+            </div>
+            <p>나사 규격, 외경, 재질 기준으로 비교합니다.</p>
+          </a>
+          <a class="category-card" href="/products">
+            <div>
+              <div class="category-icon">R</div>
+              <h3>FRL / 압력 제어</h3>
+              <p>Filter · regulator · lubricator</p>
+            </div>
+            <p>압력 범위, 유량, 포트 기준으로 찾습니다.</p>
+          </a>
+          <a class="category-card" href="/products">
+            <div>
+              <div class="category-icon">P</div>
+              <h3>진공 부품</h3>
+              <p>Ejector · pad · vacuum switch</p>
+            </div>
+            <p>흡착 조건과 패드 재질을 함께 확인합니다.</p>
+          </a>
+          <a class="category-card" href="/products">
+            <div>
+              <div class="category-icon">S</div>
+              <h3>센서 / 스위치</h3>
+              <p>Auto switch · pressure switch</p>
+            </div>
+            <p>배선, 출력, 설치 환경 기준으로 안내합니다.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="products" class="section">
+      <div class="container">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Featured products</p>
+            <h2 class="section-title">주력 제품 안내</h2>
+            <p class="section-desc">최고의 기술력이 담긴 최신 제품을 만나보세요.</p>
+          </div>
+          <a class="button" href="/products">전체보기</a>
+        </div>
+
+        <div class="product-grid">
+          <a class="product-card" href="/products">
+            <div class="product-thumb">V</div>
+            <div class="product-info">
+              <span class="product-tag">방향 제어 밸브 · DC 24V</span>
+              <h3>솔레노이드 밸브</h3>
+              <p>공정 조건에 맞는 포트 수와 전압 사양을 확인합니다.</p>
+            </div>
+          </a>
+          <a class="product-card" href="/products">
+            <div class="product-thumb">C</div>
+            <div class="product-info">
+              <span class="product-tag">에어 실린더 · Compact</span>
+              <h3>컴팩트 실린더</h3>
+              <p>설치 공간과 스트로크 조건에 맞춰 상담합니다.</p>
+            </div>
+          </a>
+          <a class="product-card" href="/products">
+            <div class="product-thumb">F</div>
+            <div class="product-info">
+              <span class="product-tag">피팅 / 튜브 · One-touch</span>
+              <h3>원터치 피팅</h3>
+              <p>튜브 외경, 나사 규격, 재질 조건을 비교합니다.</p>
+            </div>
+          </a>
+          <a class="product-card" href="/products">
+            <div class="product-thumb">R</div>
+            <div class="product-info">
+              <span class="product-tag">FRL · Regulator</span>
+              <h3>압력 조정기</h3>
+              <p>압력 범위와 유량 조건에 맞는 제품을 안내합니다.</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="catalogs" class="section catalog-section">
+      <div class="container">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Catalogs</p>
+            <h2 class="section-title">제품군별 PDF 카탈로그</h2>
+            <p class="section-desc">제품 사양과 적용 정보를 확인하거나 다운로드할 수 있습니다.</p>
+          </div>
+        </div>
+
+        <div class="catalog-grid">
+          <article class="catalog-card">
+            <h3>방향 제어 밸브</h3>
+            <p>제품 사양과 적용 정보를 확인하세요.</p>
+            <span class="catalog-meta">PDF · valves.pdf</span>
+            <div class="catalog-actions">
+              <a class="button" href="/catalogs/valves.pdf" target="_blank" rel="noopener noreferrer">PDF 보기</a>
+              <a class="button primary" href="/catalogs/valves.pdf" download>다운로드</a>
+            </div>
+          </article>
+          <article class="catalog-card">
+            <h3>에어 실린더</h3>
+            <p>보어, 스트로크, 장착 방식 관련 자료입니다.</p>
+            <span class="catalog-meta">PDF · cylinders.pdf</span>
+            <div class="catalog-actions">
+              <a class="button" href="/catalogs/cylinders.pdf" target="_blank" rel="noopener noreferrer">PDF 보기</a>
+              <a class="button primary" href="/catalogs/cylinders.pdf" download>다운로드</a>
+            </div>
+          </article>
+          <article class="catalog-card">
+            <h3>피팅 / 튜브</h3>
+            <p>규격과 연결 방식 자료입니다.</p>
+            <span class="catalog-meta">PDF · fittings-tubes.pdf</span>
+            <div class="catalog-actions">
+              <a class="button" href="/catalogs/fittings-tubes.pdf" target="_blank" rel="noopener noreferrer">PDF 보기</a>
+              <a class="button primary" href="/catalogs/fittings-tubes.pdf" download>다운로드</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="brands" class="section brand-section">
+      <div class="container brand-grid-wrap">
+        <div>
+          <p class="eyebrow">Partners</p>
+          <h2 class="section-title">공압 전문 제품을 상담합니다</h2>
+          <p class="section-desc">
+            파카(Parker), 노그린(IMI), 공압전문메이커(SNS Pneumatic),
+            케이시시공압(KCC), SMC 등 주요 브랜드 제품 상담을 제공합니다.
+          </p>
+        </div>
+        <div class="brand-grid">
+          <a class="brand-card" href="https://www.parker.com/kr/ko/home.html" target="_blank" rel="noopener noreferrer"><img src="../partners/parker.png" alt="Parker"></a>
+          <a class="brand-card" href="https://www.norgren.com/en" target="_blank" rel="noopener noreferrer"><img src="../partners/imi.png" alt="IMI Norgren"></a>
+          <a class="brand-card" href="https://www.sns1999.com/" target="_blank" rel="noopener noreferrer"><img src="../partners/sns.png" alt="SNS Pneumatic"></a>
+          <a class="brand-card" href="http://www.kccpr.com" target="_blank" rel="noopener noreferrer"><img src="../partners/kcc.png" alt="KCC"></a>
+          <a class="brand-card" href="https://cypag.com/en/home-en/" target="_blank" rel="noopener noreferrer"><img src="../partners/cypag.png" alt="CYPAG"></a>
+          <a class="brand-card text" href="/products">SMC</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="section">
+      <div class="container">
+        <div class="bottom-cta">
+          <div>
+            <h2>원하시는 제품을 찾지 못하셨나요?</h2>
+            <p>
+              저희는 고객의 요구사항에 맞춘 커스텀 솔루션도 제공하고 있습니다.
+              담당자와의 1:1 상담을 통해 최적의 제안을 받아보세요.
+            </p>
+          </div>
+          <a class="button primary" href="/contact">무료 상담 신청하기</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

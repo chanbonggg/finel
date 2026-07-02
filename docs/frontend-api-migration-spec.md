@@ -189,7 +189,7 @@ CSRF 실패 처리:
 파일 업로드 예외:
 
 ```text
-Cloudinary 직접 업로드는 Spring API가 아니므로 apiFetch를 사용하지 않는다.
+Cloudinary 업로드는 Spring `/api/uploads/images`를 사용하며, 브라우저에서 Cloudinary unsigned preset을 직접 호출하지 않는다.
 multipart/form-data 또는 외부 API 호출은 Content-Type 자동 설정을 방해하지 않도록 별도 함수로 둔다.
 GET/HEAD 요청에는 기본 Content-Type을 붙이지 않는다.
 JSON body가 있는 요청에만 Content-Type: application/json을 붙인다.
