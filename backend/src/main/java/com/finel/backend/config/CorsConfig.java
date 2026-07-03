@@ -1,6 +1,7 @@
 package com.finel.backend.config;
 
 import java.util.List;
+import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +16,11 @@ public class CorsConfig {
     CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origin}") String allowedOrigin) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigin));
+        List<String> allowedOrigins = Arrays.stream(allowedOrigin.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .toList();
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Content-Type", "X-XSRF-TOKEN"));
         configuration.setAllowCredentials(true);
