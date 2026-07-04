@@ -10,17 +10,23 @@ import type { Product } from "@/lib/api/products";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: `${SEO.companyName} | ${SEO.siteName}`,
-  description: `${SEO.siteNameKo}(${SEO.siteName})은 신뢰할 수있는 산업용 공압 부품을 공급하는 전문 기업입니다. 파카(Parker), 노그린(IMI), 공압전문메이커(SNS Pneumatic), 케이시시공압(KCC), SMC 등 공압 전문 제품을 상담, 기술지원, 맞춤형 솔루션을 제공합니다.`,
-  keywords: [...SEO.baseKeywords, "공압 부품 공급", "전문 기업"],
+  title: `${SEO.siteNameKo} 산업용 공압 부품 | ${SEO.siteName}`,
+  description: `${SEO.siteNameKo}(${SEO.siteName})은 산업용 공압 부품과 pneumatic parts 제품 도입을 돕는 전문 기업입니다. Parker, IMI Norgren, SNS Pneumatic, KCC 등 주요 브랜드 제품 상담과 견적 문의를 지원합니다.`,
+  keywords: [...SEO.baseKeywords, "공압 부품 공급", "공압 제품 상담", "공압 견적", "전문 기업"],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: `${SEO.companyName} | ${SEO.siteName}`,
-    description: `${SEO.siteNameKo}(${SEO.siteName})은 신뢰할 수있는 산업용 공압 부품을 공급하는 전문 기업입니다. 파카(Parker), 노그린(IMI), 공압전문메이커(SNS Pneumatic), 케이시시공압(KCC), SMC 등 공압 전문 제품을 상담, 기술지원, 맞춤형 솔루션을 제공합니다.`,
+    title: `${SEO.siteNameKo} 산업용 공압 부품 | ${SEO.siteName}`,
+    description: `${SEO.siteNameKo}(${SEO.siteName})은 산업용 공압 부품과 pneumatic parts 제품 상담, 기술 지원, 견적 문의를 제공합니다.`,
     url: "/",
     type: "website",
+    images: [{ url: "/og-image.png", alt: `${SEO.siteNameKo} 산업용 공압 부품` }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SEO.siteNameKo} 산업용 공압 부품 | ${SEO.siteName}`,
+    description: `${SEO.siteNameKo}(${SEO.siteName})은 산업용 공압 부품과 pneumatic parts 제품 상담, 기술 지원, 견적 문의를 제공합니다.`,
     images: ["/og-image.png"],
   },
 };

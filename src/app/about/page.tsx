@@ -8,16 +8,23 @@ const partnerNames = PARTNERS.map((partner) => partner.name);
 
 export const metadata: Metadata = {
     title: "회사 소개",
-    description: `${SEO.siteName}(${SEO.siteNameKo}) 회사 소개 및 파트너 정보를 확인할 수 있습니다.`,
-    keywords: [...SEO.baseKeywords, "회사 소개", ...partnerNames],
+    description: `${SEO.siteNameKo}(${SEO.siteName})의 산업용 공압 부품 상담 분야, 주요 파트너 브랜드, 사업장 위치와 연락처를 확인할 수 있습니다.`,
+    keywords: [...SEO.baseKeywords, "회사 소개", "공압 부품 회사", "공압 전문 기업", ...partnerNames],
     alternates: {
         canonical: "/about",
     },
     openGraph: {
-        title: `회사 소개 | ${SEO.siteName}`,
-        description: `${SEO.siteName}(${SEO.siteNameKo}) 회사 소개`,
+        title: `${SEO.siteNameKo} 회사 소개 | ${SEO.siteName}`,
+        description: `${SEO.siteNameKo}의 산업용 공압 부품 상담 분야와 주요 파트너 브랜드를 확인하세요.`,
         url: "/about",
         type: "website",
+        images: [{ url: "/og-image.png", alt: `${SEO.siteNameKo} 회사 소개` }],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: `${SEO.siteNameKo} 회사 소개 | ${SEO.siteName}`,
+        description: `${SEO.siteNameKo}의 산업용 공압 부품 상담 분야와 주요 파트너 브랜드를 확인하세요.`,
+        images: ["/og-image.png"],
     },
 };
 

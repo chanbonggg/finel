@@ -11,6 +11,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = ["/", "/about", "/products", "/contact", "/privacy"].map((route) => ({
     url: `${siteUrl}${route}`,
     lastModified: new Date(),
+    changeFrequency: route === "/" || route === "/products" ? "weekly" as const : "monthly" as const,
+    priority: route === "/" ? 1 : route === "/products" ? 0.9 : 0.6,
   }));
 
   const { products, categories } = await getSitemapData();
@@ -18,11 +20,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const productRoutes = products.map((product) => ({
     url: `${siteUrl}/products/${product.id}`,
     lastModified: new Date(product.updatedAt),
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
   }));
 
   const categoryRoutes = categories.map((cat) => ({
     url: `${siteUrl}/products/category/${cat.id}`,
     lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
   }));
 
   return [...staticRoutes, ...productRoutes, ...categoryRoutes];

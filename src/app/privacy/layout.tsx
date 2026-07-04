@@ -13,6 +13,13 @@ export const metadata: Metadata = {
     description: `${SEO.siteName}(${SEO.siteNameKo}) 개인정보처리방침`,
     url: "/privacy",
     type: "website",
+    images: [{ url: "/og-image.png", alt: `${SEO.siteNameKo} 개인정보처리방침` }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `개인정보처리방침 | ${SEO.siteName}`,
+    description: `${SEO.siteName}(${SEO.siteNameKo}) 개인정보처리방침`,
+    images: ["/og-image.png"],
   },
 };
 

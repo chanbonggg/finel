@@ -44,6 +44,36 @@ const getProduct = cache(async function getProduct(id: string) {
   return fetchProduct(productId);
 });
 
+function uniqueStrings(values: Array<string | null | undefined>): string[] {
+  return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]));
+}
+
+function truncateMeta(value: string, length = 158): string {
+  return value.length > length ? `${value.slice(0, length - 1).trim()}…` : value;
+}
+
+function productSearchTerms(product: {
+  name: string;
+  spec: string;
+  category: string;
+}, brandName: string): string[] {
+  const tokens = `${product.name} ${product.spec}`
+    .split(/[\s,/|()·_-]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 1);
+
+  return uniqueStrings([
+    product.name,
+    product.spec,
+    product.category,
+    brandName,
+    `${SEO.siteNameKo} ${product.name}`,
+    `${SEO.siteName} ${product.name}`,
+    `${product.category} ${product.name}`,
+    ...tokens,
+  ]).slice(0, 16);
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const product = await getProduct(id);
@@ -55,38 +85,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const description = `${product.name} - ${product.spec}. ${product.description}`.slice(0, 160);
   const pageUrl = `/products/${product.id}`;
   const brand = getProductBrand(product.companyId);
+  const terms = productSearchTerms(product, brand.name);
+  const description = truncateMeta(
+    `${product.name} (${product.spec})은 ${product.category} 제품군의 산업용 공압 부품입니다. ${product.description || `${SEO.siteNameKo}에서 제품 상담과 견적 문의를 지원합니다.`}`
+  );
   const keywords = [
     ...SEO.baseKeywords,
-    brand.name,
-    product.name,
-    product.spec,
-    product.category,
+    ...terms,
   ];
+  const image = product.imageUrl
+    ? [{ url: product.imageUrl, alt: `${product.name} ${product.category}` }]
+    : [{ url: "/og-image.png", alt: `${SEO.siteNameKo} ${product.category}` }];
 
   return {
-    title: product.name,
+    title: `${product.name} ${product.category}`,
     description,
     keywords,
     alternates: {
       canonical: pageUrl,
     },
     openGraph: {
-      title: `${product.name} | ${SEO.siteName}`,
+      title: `${product.name} ${product.category} | ${SEO.siteName}`,
       description,
       url: pageUrl,
       type: "website",
-      images: product.imageUrl
-        ? [{ url: product.imageUrl, alt: product.name }]
-        : undefined,
+      images: image,
     },
     twitter: {
       card: "summary_large_image",
-      title: `${product.name} | ${SEO.siteName}`,
+      title: `${product.name} ${product.category} | ${SEO.siteName}`,
       description,
-      images: product.imageUrl ? [product.imageUrl] : undefined,
+      images: product.imageUrl ? [product.imageUrl] : ["/og-image.png"],
     },
   };
 }
@@ -101,13 +132,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const siteUrl = getSiteUrl();
   const brand = getProductBrand(product.companyId);
+  const alternateName = productSearchTerms(product, brand.name);
   const productJsonLd = {
-    "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
+    alternateName,
     description: product.description,
     image: product.imageUrl || undefined,
     category: product.category,
+    model: product.spec,
     url: `${siteUrl}/products/${product.id}`,
     brand: {
       "@type": "Organization",
@@ -115,12 +148,45 @@ export default async function ProductDetailPage({ params }: PageProps) {
       url: brand.url,
     },
   };
+  const breadcrumbJsonLd = {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "홈",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "제품",
+        item: `${siteUrl}/products`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: product.category,
+        item: `${siteUrl}/products/category/${product.categoryId}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 4,
+        name: product.name,
+        item: `${siteUrl}/products/${product.id}`,
+      },
+    ],
+  };
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [productJsonLd, breadcrumbJsonLd],
+  };
 
   return (
     <div className="site-section pb-0">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(productJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <div className="site-container">
         <Link href="/products" className="mb-6 inline-flex text-sm font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]">

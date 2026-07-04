@@ -37,16 +37,22 @@ export const metadata: Metadata = {
     default: SEO.siteName,
     template: `%s | ${SEO.siteName}`,
   },
-  description: `${SEO.companyName} ${SEO.siteName}`,
+  description: `${SEO.siteNameKo}(${SEO.siteName})은 산업용 공압 부품, pneumatic parts, 공압 제품 도입 상담과 견적 문의를 지원하는 전문 기업입니다.`,
   keywords: SEO.baseKeywords,
   openGraph: {
-    title: SEO.siteName,
-    description: `${SEO.companyName} ${SEO.siteName}`,
+    title: `${SEO.siteNameKo}(${SEO.siteName}) | ${SEO.companyName}`,
+    description: `${SEO.siteNameKo}은 산업용 공압 부품과 pneumatic parts 제품 상담, 기술 지원, 견적 문의를 제공합니다.`,
     url: siteUrl,
     siteName: SEO.siteName,
-    images: ["/og-image.png"],
+    images: [{ url: "/og-image.png", alt: `${SEO.siteNameKo} ${SEO.companyName}` }],
     locale: "ko_KR",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SEO.siteNameKo}(${SEO.siteName}) | ${SEO.companyName}`,
+    description: `${SEO.siteNameKo}은 산업용 공압 부품과 pneumatic parts 제품 상담, 기술 지원, 견적 문의를 제공합니다.`,
+    images: ["/og-image.png"],
   },
 };
 
@@ -57,12 +63,37 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-const organizationJsonLd = {
+const siteJsonLd = {
   "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "finel",
-  url: siteUrl,
-  logo: `${siteUrl}/og-image.png`,
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: SEO.siteName,
+      alternateName: [SEO.siteNameKo, "finel"],
+      description: SEO.companyName,
+      url: siteUrl,
+      logo: `${siteUrl}/og-image.png`,
+      contactPoint: {
+        "@type": "ContactPoint",
+        telephone: "+82-2-2693-3569",
+        contactType: "sales",
+        areaServed: "KR",
+        availableLanguage: ["ko"],
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      name: SEO.siteName,
+      alternateName: SEO.siteNameKo,
+      url: siteUrl,
+      inLanguage: "ko-KR",
+      publisher: {
+        "@id": `${siteUrl}/#organization`,
+      },
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -75,7 +106,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
         />
         <div className="site-shell">
           <Navbar />
