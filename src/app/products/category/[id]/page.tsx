@@ -12,8 +12,6 @@ type PageProps = {
     params: Promise<{ id: string }>;
 };
 
-export const revalidate = 300;
-
 const getCategory = cache(async function getCategory(id: string) {
     const categoryId = Number(id);
 

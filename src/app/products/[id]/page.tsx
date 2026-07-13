@@ -12,8 +12,6 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export const revalidate = 300;
-
 function safeJsonLd(obj: Record<string, unknown>): string {
   return JSON.stringify(obj).replace(/<\/script/gi, "<\\/script");
 }
