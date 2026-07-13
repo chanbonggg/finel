@@ -19,8 +19,8 @@ public class AdminBootstrap implements ApplicationRunner {
         if(!properties.enabled()) return;
         if(properties.username()==null||properties.username().isBlank()||properties.password()==null||properties.password().isBlank()) throw new IllegalStateException("ADMIN_USERNAME and ADMIN_PASSWORD are required when bootstrap is enabled");
         String username=properties.username().trim();
-        if(admins.existsByUsername(username)){log.info("admin bootstrap skipped: existing username={}",username);return;}
+        if(admins.existsByUsername(username)){log.info("admin bootstrap skipped: existing admin account");return;}
         admins.save(Admin.create(username,encoder.encode(properties.password())));
-        log.info("admin bootstrap created: username={}",username);
+        log.info("admin bootstrap created admin account");
     }
 }

@@ -1,5 +1,6 @@
 package com.finel.backend.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -12,10 +13,13 @@ import jakarta.servlet.http.Cookie;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
+@ExtendWith(OutputCaptureExtension.class)
 class SecurityIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired PasswordEncoder passwordEncoder;
@@ -45,10 +50,15 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    void stateChangingAdminRequestWithoutCsrfIsForbiddenBeforeMutation() throws Exception {
+    void stateChangingAdminRequestWithoutCsrfIsForbiddenBeforeMutation(CapturedOutput output) throws Exception {
         mvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorCode").value("CSRF_INVALID"));
+
+        assertThat(output).contains("security access denied")
+                .contains("csrfFailure=true")
+                .doesNotContain("XSRF-TOKEN")
+                .doesNotContain("X-XSRF-TOKEN");
     }
 
     @Test
@@ -98,5 +108,17 @@ class SecurityIntegrationTest {
         mvc.perform(get("/api/products").cookie(new Cookie("auth_token", "invalid-jwt")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.products").isArray());
+    }
+
+    @Test
+    void authenticationFailureLogDoesNotExposeJwt(CapturedOutput output) throws Exception {
+        String jwt = "header.payload.signature-secret";
+
+        mvc.perform(get("/api/inquiries").cookie(new Cookie("auth_token", jwt)))
+                .andExpect(status().isUnauthorized());
+
+        assertThat(output).contains("security authentication failed")
+                .doesNotContain(jwt)
+                .doesNotContain("signature-secret");
     }
 }

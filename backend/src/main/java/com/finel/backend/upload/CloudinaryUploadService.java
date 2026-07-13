@@ -8,17 +8,22 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.Map;
 import java.util.TreeMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @EnableConfigurationProperties(CloudinaryProperties.class)
 public class CloudinaryUploadService {
+    private static final Logger log = LoggerFactory.getLogger(CloudinaryUploadService.class);
     private static final long MAX_IMAGE_BYTES = 5 * 1024 * 1024;
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             MediaType.IMAGE_JPEG_VALUE,
@@ -37,6 +42,8 @@ public class CloudinaryUploadService {
     public ImageUploadResponse upload(MultipartFile file) {
         validate(file);
         if (!properties.configured()) {
+            log.warn("cloudinary upload configuration missing: cloudNameConfigured={} apiKeyConfigured={} apiSecretConfigured={}",
+                    hasText(properties.cloudName()), hasText(properties.apiKey()), hasText(properties.apiSecret()));
             throw new IllegalArgumentException("Cloudinary upload is not configured.");
         }
 
@@ -54,16 +61,26 @@ public class CloudinaryUploadService {
         signedParams.forEach(body::add);
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> response = restClient.post()
-                .uri("https://api.cloudinary.com/v1_1/{cloudName}/image/upload", properties.cloudName())
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(body)
-                .retrieve()
-                .body(Map.class);
+        Map<String, Object> response;
+        try {
+            response = restClient.post()
+                    .uri("https://api.cloudinary.com/v1_1/{cloudName}/image/upload", properties.cloudName())
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(body)
+                    .retrieve()
+                    .body(Map.class);
+        } catch (RestClientResponseException e) {
+            log.error("cloudinary upload request failed: status={} type={}", e.getStatusCode(), e.getClass().getName());
+            throw e;
+        } catch (RestClientException e) {
+            log.error("cloudinary upload request failed: type={}", e.getClass().getName());
+            throw e;
+        }
 
         String secureUrl = response == null ? null : (String) response.get("secure_url");
         String publicId = response == null ? null : (String) response.get("public_id");
         if (secureUrl == null || secureUrl.isBlank()) {
+            log.error("cloudinary upload response missing secure_url");
             throw new IllegalStateException("Image upload failed.");
         }
         return new ImageUploadResponse(true, secureUrl, publicId);
@@ -107,5 +124,9 @@ public class CloudinaryUploadService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-1 is unavailable.", e);
         }
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

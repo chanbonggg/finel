@@ -6,10 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+@ExtendWith(OutputCaptureExtension.class)
 class PublicRateLimitFilterTest {
     @Test
     void inquiryFourthRequestIsRateLimitedPerClient() throws ServletException, IOException {
@@ -44,6 +48,16 @@ class PublicRateLimitFilterTest {
             filter.doFilter(request, last, new MockFilterChain());
         }
         assertThat(last.getStatus()).isEqualTo(429);
+    }
+
+    @Test
+    void rateLimitLogMasksRemoteAddress(CapturedOutput output) throws ServletException, IOException {
+        PublicRateLimitFilter filter = new PublicRateLimitFilter(new ObjectMapper());
+        for (int i = 0; i < 4; i++) invoke(filter, "/api/inquiries", "203.0.113.99");
+
+        assertThat(output).contains("public rate limit exceeded")
+                .contains("remoteAddrHash=")
+                .doesNotContain("203.0.113.99");
     }
 
     private static MockHttpServletResponse invoke(PublicRateLimitFilter filter, String uri, String ip)

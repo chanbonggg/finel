@@ -33,6 +33,10 @@ management:
     mail:
       enabled: false
 
+logging:
+  pattern:
+    level: "%5p [requestId:%X{requestId:-}]"
+
 app:
   cors:
     allowed-origin: ${FRONTEND_ORIGIN:http://localhost:3000}

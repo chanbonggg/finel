@@ -7,7 +7,7 @@ import { PARTNERS } from "@/constants/partners";
 import { SEO } from "@/constants/seo";
 import type { Product } from "@/lib/api/products";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: `${SEO.siteNameKo} 산업용 공압 부품 | ${SEO.siteName}`,
@@ -40,7 +40,13 @@ function getRandomHeroProducts(products: Product[]) {
 }
 
 export default async function Home() {
-  const products = await getFeaturedProducts(12);
+  let products: Product[] = [];
+  try {
+    products = await getFeaturedProducts(12);
+  } catch (error) {
+    console.error("Failed to load featured products:", error);
+  }
+
   const heroProducts = getRandomHeroProducts(products);
   const featuredProducts = products.slice(0, 4);
 
