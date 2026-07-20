@@ -1,8 +1,8 @@
 import { PARTNERS } from '@/constants/partners';
 import Image from 'next/image';
-import { FormField, AdminInput, AdminTextarea } from '../AdminUI';
+import { FormField, AdminInput, AdminTextarea } from './AdminUI';
 import CategoryManager from './CategoryManager';
-import { useProductAdmin } from '@/hooks/useProductAdmin';
+import { useProductAdmin } from '@/features/admin/hooks/useProductAdmin';
 
 // useProductAdmin의 리턴 타입을 활용하거나 필요한 부분만 정의
 type ProductAdminHook = ReturnType<typeof useProductAdmin>;

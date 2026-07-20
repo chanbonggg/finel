@@ -1,7 +1,7 @@
 'use client';
 
-import { useInquiry } from '@/hooks/useInquiry';
-import InquiryList from './components/InquiryList';
+import { useInquiry } from '@/features/contact/hooks/useInquiry';
+import InquiryList from './InquiryList';
 
 export default function InquiryTab() {
     const { inquiries, isLoading, fetchInquiries, handleDelete } = useInquiry();

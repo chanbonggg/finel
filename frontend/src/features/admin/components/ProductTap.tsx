@@ -1,8 +1,8 @@
 'use client';
 
-import { useProductAdmin } from '@/hooks/useProductAdmin';
-import ProductForm from './components/ProductForm';
-import ProductTable from './components/ProductTable';
+import { useProductAdmin } from '@/features/admin/hooks/useProductAdmin';
+import ProductForm from './ProductForm';
+import ProductTable from './ProductTable';
 
 export default function ProductTab() {
     const { data, actions, refs } = useProductAdmin();

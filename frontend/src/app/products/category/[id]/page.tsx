@@ -6,7 +6,7 @@ import { getCategory as fetchCategory } from "@/lib/api/categories";
 import { getProducts } from "@/lib/api/products";
 import { SEO } from "@/constants/seo";
 import { getSiteUrl } from "@/lib/site-url";
-import ProductCard from "@/components/ProductCard";
+import ProductCard from "@/features/products/components/ProductCard";
 
 type PageProps = {
     params: Promise<{ id: string }>;

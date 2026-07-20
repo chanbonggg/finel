@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import InquiryTab from '@/app/chanyoung/InquiryTap'
-import ProductTab from '@/app/chanyoung/ProductTap';
+import InquiryTab from '@/features/admin/components/InquiryTap'
+import ProductTab from '@/features/admin/components/ProductTap';
 import { logout } from '@/lib/api/auth';
 
 export default function AdminPage() {

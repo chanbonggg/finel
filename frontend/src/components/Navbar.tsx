@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import ProductSearch from '@/components/ProductSearch';
+import ProductSearch from '@/features/products/components/ProductSearch';
 
 export default function Navbar() {
   return (

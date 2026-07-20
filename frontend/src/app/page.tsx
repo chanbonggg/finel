@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import HomeHeroClient from "@/app/HomeHeroClient";
+import HomeHeroClient from "@/features/home/HomeHeroClient";
 import { getFeaturedProducts } from "@/lib/api/products";
 import { PARTNERS } from "@/constants/partners";
 import { SEO } from "@/constants/seo";

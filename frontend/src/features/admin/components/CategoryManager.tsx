@@ -1,5 +1,5 @@
 import type { Category } from '@/lib/api/types';
-import { AdminSelect, AdminInput } from '../AdminUI';
+import { AdminSelect, AdminInput } from './AdminUI';
 
 interface Props {
     categories: Category[];

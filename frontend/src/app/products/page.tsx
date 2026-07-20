@@ -5,7 +5,7 @@ import Image from "next/image";
 import { PARTNERS } from '@/constants/partners';
 import { getProducts, type Product } from '@/lib/api/products';
 import type { Category } from '@/lib/api/types';
-import ProductCard from '@/components/ProductCard';
+import ProductCard from '@/features/products/components/ProductCard';
 
 export default function ProductsPage() {
     // 2. [변경된 부분] 가짜 데이터 대신 '빈 통(State)'을 만듭니다.
