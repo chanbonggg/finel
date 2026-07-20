@@ -22,6 +22,9 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
   flyway:
+    # .env is imported as a properties file, so explicitly resolve the
+    # uppercase key instead of relying on OS-environment relaxed binding.
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
     clean-disabled: true
     baseline-on-migrate: false
 
@@ -56,3 +59,7 @@ app:
     enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
     username: ${ADMIN_USERNAME:}
     password: ${ADMIN_PASSWORD:}
+  cache-invalidation:
+    # Full Next URL. Keep blank to disable notifications (the 5 minute ISR TTL remains the fallback).
+    url: ${NEXT_REVALIDATE_URL:}
+    secret: ${REVALIDATE_SECRET:}
