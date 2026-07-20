@@ -3,11 +3,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import HomeHeroClient from "@/features/home/HomeHeroClient";
 import { getFeaturedProducts } from "@/lib/api/products";
+import { isApiConfigurationError } from "@/lib/api/client";
 import { PARTNERS } from "@/constants/partners";
 import { SEO } from "@/constants/seo";
 import type { Product } from "@/lib/api/products";
-
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `${SEO.siteNameKo} 산업용 공압 부품 | ${SEO.siteName}`,
@@ -40,7 +39,13 @@ function getRandomHeroProducts(products: Product[]) {
 }
 
 export default async function Home() {
-  const products = await getFeaturedProducts(12);
+  let products: Product[] = [];
+  try {
+    products = await getFeaturedProducts(12);
+  } catch (error) {
+    // A production build has no Spring endpoint; runtime API failures still surface normally.
+    if (!isApiConfigurationError(error)) throw error;
+  }
   const heroProducts = getRandomHeroProducts(products);
   const featuredProducts = products.slice(0, 4);
 

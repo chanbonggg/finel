@@ -2,6 +2,7 @@ package com.finel.backend.product;
 
 import com.finel.backend.category.Category;
 import com.finel.backend.category.CategoryReader;
+import com.finel.backend.common.cache.ProductCacheInvalidationEvent;
 import com.finel.backend.common.web.UtcDates;
 import com.finel.backend.product.dto.ProductCreateRequest;
 import com.finel.backend.product.dto.ProductResponse;
@@ -11,14 +12,22 @@ import java.util.NoSuchElementException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 @Transactional(readOnly = true)
 public class ProductService {
     private final ProductRepository repository;
     private final CategoryReader categoryReader;
+    private final ApplicationEventPublisher events;
+    /** Kept for focused unit tests that do not boot a Spring application context. */
     public ProductService(ProductRepository repository, CategoryReader categoryReader) {
-        this.repository = repository; this.categoryReader = categoryReader;
+        this(repository, categoryReader, event -> { });
+    }
+    @Autowired
+    public ProductService(ProductRepository repository, CategoryReader categoryReader, ApplicationEventPublisher events) {
+        this.repository = repository; this.categoryReader = categoryReader; this.events = events;
     }
     public List<ProductResponse> list(boolean includeHidden, Integer categoryId) {
         if (includeHidden && categoryId != null) throw new IllegalArgumentException("includeHidden과 categoryId를 함께 사용할 수 없습니다.");
@@ -45,7 +54,9 @@ public class ProductService {
     public ProductResponse create(ProductCreateRequest request) {
         validate(request.name(), request.spec());
         Category category = categoryReader.get(parseId(request.categoryId()));
-        return response(repository.save(Product.create(request.name().trim(), category, request.spec().trim(), request.description(), request.imageUrl())));
+        Product product = repository.save(Product.create(request.name().trim(), category, request.spec().trim(), request.description(), request.imageUrl()));
+        events.publishEvent(new ProductCacheInvalidationEvent(product.getId(), category.getId()));
+        return response(product);
     }
     @Transactional
     public ProductResponse update(Integer id, ProductUpdateRequest request) {
@@ -54,11 +65,14 @@ public class ProductService {
         Category category = request.categoryId() == null ? product.getCategory() : categoryReader.get(parseId(request.categoryId()));
         product.update(request.name().trim(), category, request.spec().trim(), request.description(), request.imageUrl(), request.isVisible());
         repository.flush();
+        events.publishEvent(new ProductCacheInvalidationEvent(product.getId(), category.getId()));
         return response(product);
     }
     @Transactional public void delete(Integer id) {
         Product product = repository.findById(id).orElseThrow(() -> new NoSuchElementException("제품을 찾을 수 없습니다."));
+        Integer categoryId = product.getCategory().getId();
         repository.delete(product);
+        events.publishEvent(new ProductCacheInvalidationEvent(id, categoryId));
     }
     private static void validate(String name, String spec) {
         if (name == null || name.isBlank() || spec == null || spec.isBlank()) throw new IllegalArgumentException("제품명, 카테고리, 사양은 필수입니다.");
