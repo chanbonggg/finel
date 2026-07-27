@@ -1,13 +1,18 @@
-# 변경 기록
+# Config 패키지 작업 가이드
 
-- cookie 기반 HS256 JWT Resource Server, BCrypt, CORS, CSRF JSON 오류 처리를 구성했다.
-- `POST /api/inquiries`만 CSRF 예외이며 로그인과 관리자 변경 요청은 CSRF 검증 대상이다.
-- JWT secret은 UTF-8 기준 최소 32바이트를 시작 시 검증한다.
-- IP 기준 로그인 5회/분, 문의 3회/10분 인메모리 rate limit을 적용했다.
-- 공개 경로에서는 잘못된 `auth_token`을 익명으로 취급하고, `includeHidden` 및 보호 API에서는 엄격히 401 처리한다.
-- rate limit은 신뢰 프록시 설정 전까지 `remoteAddr`만 사용하며 만료 정리와 10,000개 상한을 둔다.
-- CSRF 403과 일반 권한 거부 403의 오류 응답을 구분한다.
-- 검증: Spring 컴파일과 인증/CSRF 통합 테스트가 필요하다.
-- `local` skeleton profile은 DataSource/JPA/Flyway를 제외하고 읽기 빈값을 반환하는 repository proxy를 제공해 DB 없이 context와 HTTP 서버가 기동한다.
-- local 전용 비운영 JWT placeholder로 Security bean을 완결하며 운영 profile의 secret fail-fast와 `ddl-auto=validate`는 유지한다.
-- tester: 문의 3회/10분과 로그인 5회/분 rate limit 경계 테스트, Security 통합 테스트를 추가했다.
+## 책임
+
+`config`은 Security, CORS, JPA, profile별 skeleton repository, 공개 요청 rate limit을 소유한다. 개별 도메인의 HTTP 정책이나 DB 쿼리를 넣지 않는다.
+
+## 고정 보안 규칙
+
+- 인증은 `auth_token` HttpOnly HS256 JWT cookie다. `JWT_SECRET`은 UTF-8 32바이트 이상이며 토큰/secret을 로그에 남기지 않는다.
+- CSRF는 로그인과 관리자 mutation에서 활성화한다. 현재 예외는 공개 `POST /api/inquiries`와 OPTIONS뿐이다.
+- CORS의 credential 허용 시 wildcard origin을 사용하지 않는다. cookie의 Secure/domain/SameSite 설정은 auth 패키지 계약과 일치시킨다.
+- 잘못된 cookie가 공개 API를 인증 실패로 바꾸지 않게 경로별 optional authentication 규칙을 검토한다. 관리자/`includeHidden`은 엄격히 보호한다.
+- rate limit은 신뢰 프록시가 설정되기 전 `remoteAddr`만 사용한다. 로그인 5회/분, 문의 3회/10분 기본값과 bounded cleanup을 임의 변경하지 않는다.
+
+## Profile 및 검증
+
+- `local`은 DB 없는 skeleton 기동 전용이다. 운영/devdb의 JPA validate·JWT fail-fast·Flyway 정책을 약화하지 않는다.
+- Security 통합 테스트로 401, CSRF 403, CORS credential, rate-limit 경계를 확인한다.

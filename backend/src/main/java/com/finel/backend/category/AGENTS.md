@@ -55,9 +55,7 @@
 - 테스트 데이터는 테스트가 생성한 fixture만 삭제한다.
 - Windows에서는 `backend`에서 `.\gradlew.bat test`를 실행한다.
 
-## 이번 구현 변경
+## 운영 기준
 
-- 회사별 목록, 상세, 관리자 생성·삭제를 구현했다.
-- 중복은 409, 제품 연결 카테고리 삭제는 400으로 처리한다.
-- `ProductReader`로 연결 수를 조회하고 `CategoryReader`를 제품 도메인에 제공한다.
-- 검증: Spring 컴파일 및 tester의 중복/삭제 경계 테스트 대상이다.
+- 중복은 409, 연결된 제품이 있는 카테고리 삭제는 400을 유지한다.
+- product와의 연결 확인은 `ProductReader`, product의 카테고리 확인은 `CategoryReader`로 단방향을 유지한다.

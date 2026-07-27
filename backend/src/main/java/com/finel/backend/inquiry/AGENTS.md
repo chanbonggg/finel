@@ -72,10 +72,7 @@
 - JavaMailSender는 mock하고 기본 테스트에서 실제 SMTP를 호출하지 않는다.
 - Windows에서는 `backend`에서 `.\gradlew.bat test`를 실행한다.
 
-## 이번 구현 변경
+## 운영 기준
 
-- legacy/current 입력 필드를 정규화하고 필수값을 검증한다.
-- 별도 `REQUIRES_NEW` persistence service에서 저장·commit한 뒤 메일을 발송한다.
-- 메일 실패는 502, `inquirySaved=true`, `inquiryId`를 유지하며 목록·삭제 관리자 API를 구현했다.
-- 검증: Spring 컴파일 및 tester의 저장 후 메일 실패/rollback 분리 테스트 대상이다.
-- tester: 저장 후 메일 실패 시 `inquirySaved=true`/`inquiryId` 유지와 검증 실패 시 저장·메일 미호출 테스트를 추가했다.
+- legacy/current 입력 alias를 계속 정규화하며, 별도 persistence bean의 commit 후에만 메일을 발송한다.
+- 메일 실패는 502여도 `inquirySaved=true`와 `inquiryId`를 보존한다. 이 경계는 프론트 접수 UX와 함께 회귀 검증한다.

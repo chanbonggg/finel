@@ -58,8 +58,7 @@
 - 실제 SMTP 발송은 기본 Gradle test에서 금지하고 mock 또는 별도 수동 integration profile만 사용한다.
 - Windows에서는 `backend`에서 `.\gradlew.bat test`를 실행한다.
 
-## 이번 구현 변경
+## 운영 기준
 
-- 환경 변수 기반 발신/수신 설정과 `JavaMailSender` 알림 발송을 구현했다.
-- SMTP 예외는 공개 상세를 노출하지 않는 `MailSendException`으로 변환한다.
-- 검증: 실제 SMTP 접근 없이 mock 기반 테스트 대상이다.
+- 환경 변수 기반 발신/수신 설정과 `JavaMailSender`를 유지한다.
+- SMTP 예외는 공개 상세를 노출하지 않는 `MailSendException`으로 변환하며, 실제 발송은 기본 테스트 범위에 포함하지 않는다.

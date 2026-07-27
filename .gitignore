@@ -36,6 +36,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+!.env.production.example
 
 # vercel
 .vercel
@@ -45,6 +46,11 @@ yarn-error.log*
 next-env.d.ts
 
 /frontend/src/generated/prisma
+
+# Server-local deployment material
+/nginx/certs/
+/nginx/acme-challenge/
+/deploy/backups/
 PROJECT_STATUS.md
 
 MEMORY.md

@@ -1,6 +1,7 @@
-# Spring API 전환 기록
+# Shared Hooks 작업 가이드
 
-- 관리자 제품/카테고리/문의 훅을 공통 Spring API client로 전환했다.
-- 관리자 목록은 `includeHidden=true`, 변경 요청은 CSRF 포함 helper를 사용한다.
-- 숨김 제품 수정은 공개 상세 API가 아니라 이미 받은 관리자 목록 데이터를 사용한다.
-- 검증: 관리자 CRUD E2E, lint/build 대상이다.
+`hooks/`에는 여러 feature에서 재사용 가능한 클라이언트 훅만 둔다. 도메인 API 상태와 관리자 CRUD는 각 feature가 소유한다.
+
+- browser API, timer, listener는 mount/unmount 정리를 보장한다.
+- 반환값과 dependency는 안정적으로 유지하고 stale closure, 중복 요청, SSR 실행을 피한다.
+- API 호출이 필요하면 `@/lib/api`를 사용하며 직접 endpoint·cookie·CSRF 처리를 구현하지 않는다.

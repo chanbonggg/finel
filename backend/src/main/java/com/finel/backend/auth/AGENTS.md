@@ -63,14 +63,8 @@
 - 실제 secret이나 운영 계정을 테스트에 사용하지 않는다.
 - Windows에서는 `backend`에서 `.\gradlew.bat test`, 특정 테스트는 `.\gradlew.bat test --tests "완전한.테스트클래스명"`으로 실행한다.
 
-## 이번 구현 변경
+## 운영 기준
 
-- bcrypt 로그인, HS256 12시간 JWT 발급, `auth_token` HttpOnly 쿠키 발급·삭제를 구현했다.
-- verify와 CSRF 발급 API 및 JWT claim 응답을 구현했다.
-- 비밀번호/JWT/secret 원문은 로그에 남기지 않는다.
-- 검증: Spring 컴파일 및 tester의 cookie/JWT/CSRF/rate-limit 테스트 대상이다.
-- opt-in ApplicationRunner 관리자 bootstrap을 추가했으며 기존 username을 덮어쓰지 않고 bcrypt hash만 저장한다.
-- bootstrap 로그에는 username만 허용하고 password/hash/DB 정보는 출력하지 않는다.
-- 로그인/로그아웃 메시지를 API 계약의 `로그인 성공` / `Logged out`으로 고정하고 통합 테스트로 검증한다.
-- tester: CSRF 발급·거부, 관리자 401, JWT HttpOnly cookie 로그인/verify, 잘못된 cookie가 있는 공개 API 계약 테스트를 추가했다.
-- tester: 잘못된 `auth_token`이 있는 공개 제품 조회가 401이 되는 명세 위반을 재현했다.
+- opt-in 관리자 bootstrap은 기존 username을 덮어쓰지 않고 bcrypt hash만 저장한다. 로그에는 username 외 password/hash/DB 정보를 남기지 않는다.
+- 로그인·로그아웃 메시지와 cookie 속성은 프론트 client 및 API 계약과 함께 변경한다.
+- 잘못된 `auth_token`이 공개 API 접근을 401로 바꾸지 않는지 회귀 테스트에 포함한다.

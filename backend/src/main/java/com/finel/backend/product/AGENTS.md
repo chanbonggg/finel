@@ -66,11 +66,7 @@
 - 응답 JSON의 category 문자열, companyId, UTC 날짜 형식을 검증한다.
 - Windows에서는 `backend`에서 `.\gradlew.bat test`를 실행한다.
 
-## 이번 구현 변경
+## 운영 기준
 
-- 공개 목록/상세/검색/featured/categoryId 조회와 관리자 생성·수정·삭제를 구현했다.
-- 숨김 제품 공개 제외, `includeHidden=true` 인증 확인, 평탄화된 응답과 UTC 날짜 변환을 적용했다.
-- `CategoryReader`만 사용해 다른 도메인 Repository 직접 의존을 피했다.
-- sitemap projection과 `ProductReader.countByCategoryId`를 추가했다.
-- 검증: Spring 컴파일 및 tester의 Controller/Service/Repository 테스트 대상이다.
-- tester: 공개 visible 목록의 평탄화 응답, 숨김 상세 404, 관리자 전체 목록 인증, 금지된 필터 조합 테스트를 추가했다.
+- 공개 목록·상세·검색·featured·category 조회와 관리자 CRUD의 visibility/인증 경계를 유지한다.
+- Category 의존은 `CategoryReader`만 사용하고, sitemap projection과 `ProductReader.countByCategoryId`는 최소 읽기 계약으로 유지한다.
