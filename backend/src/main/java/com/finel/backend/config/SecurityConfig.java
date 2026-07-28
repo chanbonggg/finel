@@ -51,6 +51,9 @@ public class SecurityConfig {
                         mapper.writeValue(res.getOutputStream(),body);
                     }))
                 .authorizeHttpRequests(auth -> auth
+                    // Docker probes this endpoint over the private Compose network. Nginx only
+                    // proxies /api, so it is not reachable from the public reverse-proxy path.
+                    .requestMatchers("/actuator/health").permitAll()
                     .requestMatchers("/api/auth/csrf","/api/auth/login","/api/auth/logout","/api/sitemap-data").permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/inquiries").permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/products/**","/api/categories/**").permitAll()

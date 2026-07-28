@@ -8,6 +8,9 @@ import { getSiteUrl } from "@/lib/site-url";
 import { SEO } from "@/constants/seo";
 import { PARTNERS } from "@/constants/partners";
 
+// Metadata and page content require the Compose-only Spring API endpoint.
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };

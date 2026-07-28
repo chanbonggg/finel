@@ -8,6 +8,9 @@ import { SEO } from "@/constants/seo";
 import { getSiteUrl } from "@/lib/site-url";
 import ProductCard from "@/features/products/components/ProductCard";
 
+// Category data is fetched through the backend after the Compose network starts.
+export const dynamic = "force-dynamic";
+
 type PageProps = {
     params: Promise<{ id: string }>;
 };

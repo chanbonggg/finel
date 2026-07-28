@@ -51,12 +51,25 @@ function normalizeApiPath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
+function joinApiUrl(baseUrl: string, path: string): string {
+  const normalizedPath = normalizeApiPath(path);
+
+  // Browser deployments use `/api` as the public base while API callers keep
+  // their contract paths as `/api/...`. Keep the prefix exactly once. Server
+  // deployments use `http://finel-backend:8080` and retain the full path.
+  if (baseUrl.endsWith('/api') && (normalizedPath === '/api' || normalizedPath.startsWith('/api/'))) {
+    return `${baseUrl}${normalizedPath.slice('/api'.length)}`;
+  }
+
+  return `${baseUrl}${normalizedPath}`;
+}
+
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  return fetch(`${getApiBaseUrl()}${normalizeApiPath(path)}`, { ...init, headers, credentials: 'include' });
+  return fetch(joinApiUrl(getApiBaseUrl(), path), { ...init, headers, credentials: 'include' });
 }
 
 export async function readJson<T>(response: Response): Promise<T> {
