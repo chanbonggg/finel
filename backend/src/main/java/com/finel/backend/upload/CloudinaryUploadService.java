@@ -5,11 +5,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.Set;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -24,6 +26,15 @@ import org.springframework.web.multipart.MultipartFile;
 @EnableConfigurationProperties(CloudinaryProperties.class)
 public class CloudinaryUploadService {
     private static final Logger log = LoggerFactory.getLogger(CloudinaryUploadService.class);
+    private static final String CLOUDINARY_UPLOAD_URI = "https://api.cloudinary.com/v1_1/{cloudName}/image/upload";
+    private static final String FIELD_API_KEY = "api_key";
+    private static final String FIELD_FILE = "file";
+    private static final String FIELD_FOLDER = "folder";
+    private static final String FIELD_PUBLIC_ID = "public_id";
+    private static final String FIELD_SECURE_URL = "secure_url";
+    private static final String FIELD_SIGNATURE = "signature";
+    private static final String FIELD_TIMESTAMP = "timestamp";
+    private static final String DEFAULT_FILENAME = "upload";
     private static final long MAX_IMAGE_BYTES = 5 * 1024 * 1024;
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             MediaType.IMAGE_JPEG_VALUE,
@@ -33,38 +44,62 @@ public class CloudinaryUploadService {
     );
 
     private final CloudinaryProperties properties;
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
 
+    @Autowired
     public CloudinaryUploadService(CloudinaryProperties properties) {
+        this(properties, RestClient.create());
+    }
+
+    CloudinaryUploadService(CloudinaryProperties properties, RestClient restClient) {
         this.properties = properties;
+        this.restClient = restClient;
     }
 
     public ImageUploadResponse upload(MultipartFile file) {
         validate(file);
+        ensureConfigured();
+
+        // Keep signed upload steps explicit so validation, logging, and response contracts stay reviewable.
+        Map<String, String> signedParams = signedUploadParams();
+        LinkedMultiValueMap<String, Object> body = uploadBody(file, signedParams);
+        Map<String, Object> response = uploadToCloudinary(body);
+        return imageUploadResponse(response);
+    }
+
+    private void ensureConfigured() {
         if (!properties.configured()) {
             log.warn("cloudinary upload configuration missing: cloudNameConfigured={} apiKeyConfigured={} apiSecretConfigured={}",
                     hasText(properties.cloudName()), hasText(properties.apiKey()), hasText(properties.apiSecret()));
             throw new IllegalArgumentException("Cloudinary upload is not configured.");
         }
+    }
 
+    private Map<String, String> signedUploadParams() {
         long timestamp = Instant.now().getEpochSecond();
         Map<String, String> signedParams = new TreeMap<>();
-        signedParams.put("timestamp", String.valueOf(timestamp));
-        if (properties.folder() != null && !properties.folder().isBlank()) {
-            signedParams.put("folder", properties.folder());
+        signedParams.put(FIELD_TIMESTAMP, String.valueOf(timestamp));
+        if (hasText(properties.folder())) {
+            signedParams.put(FIELD_FOLDER, properties.folder());
         }
+        return signedParams;
+    }
 
+    private LinkedMultiValueMap<String, Object> uploadBody(MultipartFile file, Map<String, String> signedParams) {
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("file", resource(file));
-        body.add("api_key", properties.apiKey());
-        body.add("signature", sign(signedParams));
+        body.add(FIELD_FILE, resource(file));
+        body.add(FIELD_API_KEY, properties.apiKey());
+        body.add(FIELD_SIGNATURE, sign(signedParams));
         signedParams.forEach(body::add);
+        return body;
+    }
 
-        @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> uploadToCloudinary(LinkedMultiValueMap<String, Object> body) {
         Map<String, Object> response;
         try {
             response = restClient.post()
-                    .uri("https://api.cloudinary.com/v1_1/{cloudName}/image/upload", properties.cloudName())
+                    .uri(CLOUDINARY_UPLOAD_URI, properties.cloudName())
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(body)
                     .retrieve()
@@ -76,9 +111,12 @@ public class CloudinaryUploadService {
             log.error("cloudinary upload request failed: type={}", e.getClass().getName());
             throw e;
         }
+        return response;
+    }
 
-        String secureUrl = response == null ? null : (String) response.get("secure_url");
-        String publicId = response == null ? null : (String) response.get("public_id");
+    private ImageUploadResponse imageUploadResponse(Map<String, Object> response) {
+        String secureUrl = response == null ? null : (String) response.get(FIELD_SECURE_URL);
+        String publicId = response == null ? null : (String) response.get(FIELD_PUBLIC_ID);
         if (secureUrl == null || secureUrl.isBlank()) {
             log.error("cloudinary upload response missing secure_url");
             throw new IllegalStateException("Image upload failed.");
@@ -90,7 +128,7 @@ public class CloudinaryUploadService {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("Image file is required.");
         if (file.getSize() > MAX_IMAGE_BYTES) throw new IllegalArgumentException("Image file must be 5MB or smaller.");
         String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
             throw new IllegalArgumentException("Only JPEG, PNG, WebP, or GIF images can be uploaded.");
         }
     }
@@ -99,8 +137,9 @@ public class CloudinaryUploadService {
         try {
             byte[] bytes = file.getBytes();
             return new ByteArrayResource(bytes) {
-                @Override public String getFilename() {
-                    return file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename();
+                @Override
+                public String getFilename() {
+                    return file.getOriginalFilename() == null ? DEFAULT_FILENAME : file.getOriginalFilename();
                 }
             };
         } catch (IOException e) {
