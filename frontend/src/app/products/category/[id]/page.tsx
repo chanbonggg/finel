@@ -98,6 +98,7 @@ export default async function CategoryPage({ params }: PageProps) {
     }
 
     const siteUrl = getSiteUrl();
+    // Use the same public-visible list for JSON-LD, empty state, and rendered cards.
     const visibleProducts = category.products.filter((product) => product.isVisible);
     const pageUrl = `${siteUrl}/products/category/${category.id}`;
     const jsonLd = {
@@ -168,13 +169,13 @@ export default async function CategoryPage({ params }: PageProps) {
             </section>
 
             <section className="grid grid-cols-3 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
-                {category.products.length === 0 && (
+                {visibleProducts.length === 0 && (
                     <div className="surface-card col-span-full p-8 text-center text-[var(--color-muted)]">
                         등록된 제품이 없습니다.
                     </div>
                 )}
 
-                {category.products.map((product) => (
+                {visibleProducts.map((product) => (
                     <ProductCard key={product.id} product={product} categoryLabel={category.name} />
                 ))}
             </section>
