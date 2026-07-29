@@ -14,9 +14,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
     private static final long ACCESS_TOKEN_TTL_SECONDS = 43_200;
-    private static final String CLAIM_ID = "id";
-    private static final String CLAIM_USERNAME = "username";
-    private static final String LOGIN_REQUIRED_MESSAGE = "아이디와 비밀번호를 입력해주세요.";
     private static final String BAD_CREDENTIALS_MESSAGE = "아이디 또는 비밀번호가 올바르지 않습니다.";
 
     private final AdminRepository admins;
@@ -29,35 +26,22 @@ public class AuthService {
         this.encoder = encoder;
     }
 
-    /**
-     * Orchestrates login without touching HTTP cookies or logging credentials;
-     * the controller owns response mutation and Security owns request filtering.
-     */
     public Login login(LoginRequest request) {
-        validateLoginRequest(request);
-        Admin admin = findAdmin(request.username());
-        verifyPassword(request.password(), admin);
-        return new Login(admin, createToken(admin));
-    }
-
-    private static void validateLoginRequest(LoginRequest request) {
         if (request.username() == null
                 || request.username().isBlank()
                 || request.password() == null
                 || request.password().isBlank()) {
-            throw new IllegalArgumentException(LOGIN_REQUIRED_MESSAGE);
+            throw new IllegalArgumentException("아이디와 비밀번호를 입력해주세요.");
         }
-    }
 
-    private Admin findAdmin(String username) {
-        return admins.findByUsername(username)
+        Admin admin = admins.findByUsername(request.username())
                 .orElseThrow(() -> new BadCredentialsException(BAD_CREDENTIALS_MESSAGE));
-    }
 
-    private void verifyPassword(String rawPassword, Admin admin) {
-        if (!passwords.matches(rawPassword, admin.getPassword())) {
+        if (!passwords.matches(request.password(), admin.getPassword())) {
             throw new BadCredentialsException(BAD_CREDENTIALS_MESSAGE);
         }
+
+        return new Login(admin, createToken(admin));
     }
 
     private String createToken(Admin admin) {
@@ -67,8 +51,8 @@ public class AuthService {
                 .issuedAt(now)
                 .expiresAt(expires)
                 .subject(admin.getUsername())
-                .claim(CLAIM_ID, admin.getId())
-                .claim(CLAIM_USERNAME, admin.getUsername())
+                .claim("id", admin.getId())
+                .claim("username", admin.getUsername())
                 .build();
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
         return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
