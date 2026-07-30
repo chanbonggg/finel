@@ -4,14 +4,10 @@ import type { ImageUploadResponse, MessageResponse, Product, ProductCreateReques
 
 export type { Product } from './types';
 type ProductsResponse = { success: boolean; products: Product[] };
-type ProductResponse = { success: boolean; product: Product };
 type ProductListOptions = { includeHidden?: boolean; categoryId?: number };
 
 const PUBLIC_PRODUCTS_CACHE = { revalidate: 300, tags: ['products'] };
-const ADMIN_PRODUCTS_INIT = { cache: 'no-store' as const };
-const SEARCH_PRODUCTS_INIT = { cache: 'no-store' as const };
 
-// Keep product request construction local so callers only depend on contract-level functions.
 function productListPath(options: ProductListOptions): string {
   const query = new URLSearchParams();
   if (options.includeHidden) query.set('includeHidden', 'true');
@@ -19,31 +15,23 @@ function productListPath(options: ProductListOptions): string {
   return `/api/products${query.size ? `?${query}` : ''}`;
 }
 
-function productListInit(options: ProductListOptions): RequestInit {
-  // Authenticated/admin reads must never share a public cache entry.
-  return options.includeHidden ? ADMIN_PRODUCTS_INIT : { next: PUBLIC_PRODUCTS_CACHE };
-}
-
-function productDetailInit(id: number | string): RequestInit {
-  return { next: { revalidate: 300, tags: ['products', `product:${id}`] } };
-}
-
 async function readProducts(response: Response): Promise<Product[]> {
   return (await readJson<ProductsResponse>(response)).products;
 }
 
-async function readProduct(response: Response): Promise<Product> {
-  return (await readJson<ProductResponse>(response)).product;
-}
-
 export async function getProducts(options: ProductListOptions = {}): Promise<Product[]> {
-  return readProducts(await apiFetch(productListPath(options), productListInit(options)));
+  return readProducts(await apiFetch(
+    productListPath(options),
+    options.includeHidden ? { cache: 'no-store' } : { next: PUBLIC_PRODUCTS_CACHE },
+  ));
 }
 
 export async function getProduct(id: number | string): Promise<Product | null> {
-  const response = await apiFetch(`/api/products/${id}`, productDetailInit(id));
+  const response = await apiFetch(`/api/products/${id}`, {
+    next: { revalidate: 300, tags: ['products', `product:${id}`] },
+  });
   if (response.status === 404) return null;
-  return readProduct(response);
+  return (await readJson<{ success: boolean; product: Product }>(response)).product;
 }
 
 export async function getFeaturedProducts(limit = 4): Promise<Product[]> {
@@ -52,7 +40,7 @@ export async function getFeaturedProducts(limit = 4): Promise<Product[]> {
 
 export async function searchProducts(q: string, signal?: AbortSignal): Promise<Product[]> {
   return readProducts(await apiFetch(`/api/products/search?q=${encodeURIComponent(q)}`, {
-    ...SEARCH_PRODUCTS_INIT,
+    cache: 'no-store',
     signal,
   }));
 }
