@@ -4,6 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { getProduct as fetchProduct } from "@/lib/api/products";
+import { safeJsonLd, truncateMeta, uniqueStrings } from "@/lib/metadata-utils";
 import { getSiteUrl } from "@/lib/site-url";
 import { SEO } from "@/constants/seo";
 import { PARTNERS } from "@/constants/partners";
@@ -14,10 +15,6 @@ export const dynamic = "force-dynamic";
 type PageProps = {
   params: Promise<{ id: string }>;
 };
-
-function safeJsonLd(obj: Record<string, unknown>): string {
-  return JSON.stringify(obj).replace(/<\/script/gi, "<\\/script");
-}
 
 function getProductBrand(companyId: number) {
   const partner = PARTNERS.find((item) => item.id === companyId);
@@ -46,14 +43,6 @@ const getProduct = cache(async function getProduct(id: string) {
 
   return fetchProduct(productId);
 });
-
-function uniqueStrings(values: Array<string | null | undefined>): string[] {
-  return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]));
-}
-
-function truncateMeta(value: string, length = 158): string {
-  return value.length > length ? `${value.slice(0, length - 1).trim()}…` : value;
-}
 
 function productSearchTerms(product: {
   name: string;
