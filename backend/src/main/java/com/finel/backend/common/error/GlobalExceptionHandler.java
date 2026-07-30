@@ -17,21 +17,12 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    private static final String MESSAGE_BAD_REQUEST = "요청 값이 올바르지 않습니다.";
-    private static final String MESSAGE_AUTH_FAILED = "아이디 또는 비밀번호가 올바르지 않습니다.";
-    private static final String MESSAGE_UNREADABLE_BODY = "요청 본문이 올바르지 않습니다.";
-    private static final String MESSAGE_MISSING_PART = "필수 요청 항목이 누락되었습니다.";
-    private static final String MESSAGE_METHOD_NOT_ALLOWED = "지원하지 않는 요청 메서드입니다.";
-    private static final String MESSAGE_UNSUPPORTED_MEDIA_TYPE = "지원하지 않는 콘텐츠 타입입니다.";
-    private static final String MESSAGE_CLIENT_ERROR = "요청을 처리할 수 없습니다.";
-    private static final String MESSAGE_INTERNAL_ERROR = "Internal server error";
-
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler({IllegalArgumentException.class, MissingServletRequestParameterException.class,
             MethodArgumentTypeMismatchException.class})
     ResponseEntity<ErrorResponse> badRequest(Exception exception) {
-        String message = exception instanceof IllegalArgumentException ? exception.getMessage() : MESSAGE_BAD_REQUEST;
+        String message = exception instanceof IllegalArgumentException ? exception.getMessage() : "요청 값이 올바르지 않습니다.";
         return badRequest(message);
     }
 
@@ -47,17 +38,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
     ResponseEntity<ErrorResponse> unauthorized(AuthenticationException exception) {
-        return error(HttpStatus.UNAUTHORIZED, MESSAGE_AUTH_FAILED);
+        return error(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ErrorResponse> unreadableBody(HttpMessageNotReadableException exception) {
-        return badRequest(MESSAGE_UNREADABLE_BODY);
+        return badRequest("요청 본문이 올바르지 않습니다.");
     }
 
     @ExceptionHandler(MissingServletRequestPartException.class)
     ResponseEntity<ErrorResponse> missingPart(MissingServletRequestPartException exception) {
-        return badRequest(MESSAGE_MISSING_PART);
+        return badRequest("필수 요청 항목이 누락되었습니다.");
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -65,7 +56,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .headers(exception.getHeaders())
-                .body(new ErrorResponse(MESSAGE_METHOD_NOT_ALLOWED));
+                .body(new ErrorResponse("지원하지 않는 요청 메서드입니다."));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
@@ -73,16 +64,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .headers(exception.getHeaders())
-                .body(new ErrorResponse(MESSAGE_UNSUPPORTED_MEDIA_TYPE));
+                .body(new ErrorResponse("지원하지 않는 콘텐츠 타입입니다."));
     }
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ErrorResponse> internalServerError(Exception exception) {
         if (exception instanceof org.springframework.web.ErrorResponse response && response.getStatusCode().is4xxClientError()) {
-            return ResponseEntity.status(response.getStatusCode()).body(new ErrorResponse(MESSAGE_CLIENT_ERROR));
+            return ResponseEntity.status(response.getStatusCode()).body(new ErrorResponse("요청을 처리할 수 없습니다."));
         }
-        log.error("unhandled server exception: type={} causeType={}", exception.getClass().getName(), causeType(exception));
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, MESSAGE_INTERNAL_ERROR);
+        log.error("unhandled server exception: type={} causeType={}",
+                exception.getClass().getName(),
+                exception.getCause() == null ? "none" : exception.getCause().getClass().getName());
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
     }
 
     /**
@@ -95,9 +88,5 @@ public class GlobalExceptionHandler {
 
     private static ResponseEntity<ErrorResponse> error(HttpStatus status, String message) {
         return ResponseEntity.status(status).body(new ErrorResponse(message));
-    }
-
-    private static String causeType(Throwable exception) {
-        return exception.getCause() == null ? "none" : exception.getCause().getClass().getName();
     }
 }
