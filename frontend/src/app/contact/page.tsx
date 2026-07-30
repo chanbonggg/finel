@@ -7,6 +7,8 @@ import { createInquiry } from '@/lib/api/inquiries';
 import type { Product } from '@/lib/api/products';
 import { isApiError } from '@/lib/api/client';
 
+const EMPTY_CONTACT_FORM = { name: '', company: '', phone: '', email: '', product: '', message: '', agreed: false, honey: '' };
+
 function ContactContent() {
     const searchParams = useSearchParams();
     const initialProduct = searchParams.get('product');
@@ -15,16 +17,7 @@ function ContactContent() {
     const [dbProducts, setDbProducts] = useState<Product[]>([]);
 
     // 입력값 상태 관리
-    const [formData, setFormData] = useState({
-        name: '',
-        company: '',
-        phone: '',
-        email: '',
-        product: '',
-        message: '',
-        agreed: false,
-        honey: ''
-    });
+    const [formData, setFormData] = useState(EMPTY_CONTACT_FORM);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [productsLoadFailed, setProductsLoadFailed] = useState(false);
@@ -95,18 +88,14 @@ function ContactContent() {
                 });
 
             alert(`문의가 성공적으로 접수되었습니다!\n담당자가 ${formData.phone}으로 곧 연락드리겠습니다.`);
-            setFormData({
-                name: '', company: '', phone: '', email: '', product: '', message: '', agreed: false, honey: ''
-            });
+            setFormData(EMPTY_CONTACT_FORM);
 
         } catch (error) {
             console.error("전송 에러:", error);
 
             if (isApiError(error) && error.status === 502 && error.data?.inquirySaved === true) {
                 alert(`문의가 성공적으로 접수되었습니다!\n담당자가 ${formData.phone}으로 곧 연락드리겠습니다.`);
-                setFormData({
-                    name: '', company: '', phone: '', email: '', product: '', message: '', agreed: false, honey: ''
-                });
+                setFormData(EMPTY_CONTACT_FORM);
             } else if (isApiError(error) && error.status === 400) {
                 alert(error.message || "입력 내용을 확인해주세요.");
             } else if (isApiError(error) && error.status === 429) {
