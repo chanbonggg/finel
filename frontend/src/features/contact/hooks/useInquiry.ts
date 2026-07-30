@@ -5,13 +5,7 @@ import { useRouter } from 'next/navigation';
 import { deleteInquiry, getInquiries } from '@/lib/api/inquiries';
 import type { Inquiry } from '@/lib/api/types';
 
-type SuccessResponse = { success: boolean; message?: string };
 type ErrorLike = Error & { status?: number; errorCode?: string; data?: { message?: string; errorCode?: string } };
-
-function requireSuccess(result: SuccessResponse): SuccessResponse {
-    if (result.success !== true) throw new Error(result.message || '요청에 실패했습니다.');
-    return result;
-}
 
 export function useInquiry() {
     const router = useRouter();
@@ -55,7 +49,7 @@ export function useInquiry() {
     const handleDelete = async (id: number) => {
         if (!confirm('정말 이 문의 내역을 삭제하시겠습니까?')) return;
         try {
-            const data = requireSuccess(await deleteInquiry(id));
+            const data = await deleteInquiry(id);
             setInquiries(previous => previous.filter(inquiry => inquiry.id !== id));
             alert(data.message || '삭제되었습니다.');
         } catch (error) {
