@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -8,7 +8,6 @@ import { translateSearchQuery } from '@/lib/searchKeywordMap';
 import { searchProducts, type Product } from '@/lib/api/products';
 
 export default function ProductSearch() {
-    // --- 상태 관리 ---
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<Product[]>([]);
@@ -20,7 +19,13 @@ export default function ProductSearch() {
     const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
-    // --- 검색 API 호출 ---
+    const closeSearch = useCallback(() => {
+        setIsOpen(false);
+        setQuery('');
+        setResults([]);
+        setSearchError(false);
+    }, []);
+
     useEffect(() => {
         if (!debouncedQuery.trim()) {
             setResults([]);
@@ -40,7 +45,6 @@ export default function ProductSearch() {
                 if (controller.signal.aborted ||
                     (error instanceof DOMException && error.name === 'AbortError') ||
                     (error instanceof Error && error.name === 'AbortError')) return;
-                console.error('검색 실패:', error);
                 setResults([]);
                 setSearchError(true);
             } finally {
@@ -52,60 +56,38 @@ export default function ProductSearch() {
         return () => controller.abort();
     }, [debouncedQuery]);
 
-    // --- 바깥 클릭 감지 ---
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-                setIsOpen(false);
-                setQuery('');
-                setResults([]);
-                setSearchError(false);
-            }
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) closeSearch();
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [closeSearch]);
 
-    // --- Escape 키로 닫기 ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) {
-                setIsOpen(false);
-                setQuery('');
-                setResults([]);
-                setSearchError(false);
-            }
+            if (e.key === 'Escape' && isOpen) closeSearch();
         };
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen]);
+    }, [isOpen, closeSearch]);
 
-    // --- 입력창 열기 시 포커스 ---
     useEffect(() => {
-        if (isOpen && inputRef.current) {
-            inputRef.current.focus();
-        }
+        if (isOpen) inputRef.current?.focus();
     }, [isOpen]);
 
-    // --- 이벤트 핸들러 ---
     const handleToggle = () => {
         if (isOpen) {
-            setIsOpen(false);
-            setQuery('');
-            setResults([]);
-            setSearchError(false);
+            closeSearch();
         } else {
             setIsOpen(true);
         }
     };
 
     const handleSelect = (productId: number) => {
-        setIsOpen(false);
-        setQuery('');
-        setResults([]);
-        setSearchError(false);
+        closeSearch();
         router.push(`/products/${productId}`);
     };
 
@@ -113,7 +95,6 @@ export default function ProductSearch() {
 
     return (
         <div ref={containerRef} className="relative flex items-center">
-            {/* 검색 입력창 */}
             {isOpen && (
                 <input
                     ref={inputRef}
@@ -127,7 +108,6 @@ export default function ProductSearch() {
                 />
             )}
 
-            {/* 돋보기 아이콘 버튼 */}
             <button
                 onClick={handleToggle}
                 className="p-1.5 rounded-lg hover:bg-white/10 transition"
@@ -149,7 +129,6 @@ export default function ProductSearch() {
                 </svg>
             </button>
 
-            {/* 검색 결과 드롭다운 */}
             {showDropdown && (
                 <div className="absolute top-full right-0 mt-2 w-72 md:w-80 bg-white rounded-xl shadow-lg
                                 border border-gray-200 z-50 overflow-hidden">
@@ -170,7 +149,6 @@ export default function ProductSearch() {
                                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50
                                                    transition text-left border-b border-gray-100 last:border-b-0"
                                     >
-                                        {/* 썸네일 */}
                                         {product.imageUrl ? (
                                             <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                                                 <Image
@@ -200,7 +178,6 @@ export default function ProductSearch() {
                                             </div>
                                         )}
 
-                                        {/* 제품 정보 */}
                                         <div className="flex-1 min-w-0">
                                             <p className="line-clamp-2-safe text-sm font-bold text-gray-800">
                                                 {product.name}
