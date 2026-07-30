@@ -50,35 +50,24 @@ public class NextCacheInvalidationNotifier {
      * already-successful database mutation even when Next is unavailable.
      */
     private void notifyNext(Integer productId, Integer categoryId) {
-        if (isDisabled()) {
+        if (url.isBlank() || secret.isBlank()) {
             return;
         }
 
-        String body = createBody(productId, categoryId);
+        // Keep URL, secret, and request body out of logs. Next consumes this exact body shape.
+        String body = "{\"productId\":"
+                + nullableNumber(productId)
+                + ",\"categoryId\":"
+                + nullableNumber(categoryId)
+                + "}";
         try {
             HttpResponse<Void> response = HTTP_CLIENT.send(createRequest(body), HttpResponse.BodyHandlers.discarding());
-            if (isFailureStatus(response.statusCode())) {
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 log.warn("Next cache invalidation returned status {}", response.statusCode());
             }
         } catch (Exception exception) {
             log.warn("Next cache invalidation failed after successful database commit", exception);
         }
-    }
-
-    private boolean isDisabled() {
-        return url.isBlank() || secret.isBlank();
-    }
-
-    /**
-     * Keep URL, secret, and request body out of logs. The body shape is the
-     * contract consumed by Next's internal revalidation route.
-     */
-    private static String createBody(Integer productId, Integer categoryId) {
-        return "{\"productId\":"
-                + nullableNumber(productId)
-                + ",\"categoryId\":"
-                + nullableNumber(categoryId)
-                + "}";
     }
 
     private HttpRequest createRequest(String body) {
@@ -88,10 +77,6 @@ public class NextCacheInvalidationNotifier {
                 .header(REVALIDATE_SECRET_HEADER, secret)
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
-    }
-
-    private static boolean isFailureStatus(int statusCode) {
-        return statusCode < 200 || statusCode >= 300;
     }
 
     private static String nullableNumber(Integer value) {
