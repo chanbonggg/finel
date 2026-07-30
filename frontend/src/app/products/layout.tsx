@@ -26,10 +26,4 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ProductsLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return children;
-}
+export default function ProductsLayout({ children }: Readonly<{ children: React.ReactNode }>) { return children; }
