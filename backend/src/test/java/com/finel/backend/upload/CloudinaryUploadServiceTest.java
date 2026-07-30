@@ -27,6 +27,10 @@ class CloudinaryUploadServiceTest {
     private static final CloudinaryProperties CONFIGURED_PROPERTIES =
             new CloudinaryProperties("demo-cloud", "api-key-sensitive", "api-secret-sensitive", "products");
 
+    private final RestClient.Builder builder = RestClient.builder();
+    private final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    private final CloudinaryUploadService service = new CloudinaryUploadService(CONFIGURED_PROPERTIES, builder.build());
+
     @Test
     void missingConfigurationLogDoesNotExposeSecretOrFilename(CapturedOutput output) {
         CloudinaryUploadService service = new CloudinaryUploadService(
@@ -47,8 +51,6 @@ class CloudinaryUploadServiceTest {
 
     @Test
     void validatesRequiredFileBeforeCloudinaryRequest() {
-        CloudinaryUploadService service = new CloudinaryUploadService(CONFIGURED_PROPERTIES);
-
         assertThatThrownBy(() -> service.upload(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Image file is required.");
@@ -56,7 +58,6 @@ class CloudinaryUploadServiceTest {
 
     @Test
     void validatesFileSizeBeforeCloudinaryRequest() {
-        CloudinaryUploadService service = new CloudinaryUploadService(CONFIGURED_PROPERTIES);
         MockMultipartFile file = new MockMultipartFile(
                 "file", "large.png", MediaType.IMAGE_PNG_VALUE, new byte[5 * 1024 * 1024 + 1]);
 
@@ -67,7 +68,6 @@ class CloudinaryUploadServiceTest {
 
     @Test
     void validatesFileTypeBeforeCloudinaryRequest() {
-        CloudinaryUploadService service = new CloudinaryUploadService(CONFIGURED_PROPERTIES);
         MockMultipartFile file = new MockMultipartFile(
                 "file", "document.pdf", MediaType.APPLICATION_PDF_VALUE, new byte[] {1, 2, 3});
 
@@ -78,9 +78,6 @@ class CloudinaryUploadServiceTest {
 
     @Test
     void externalFailureLogDoesNotExposeSecretFilenameOrCloudinaryBody(CapturedOutput output) {
-        RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        CloudinaryUploadService service = new CloudinaryUploadService(CONFIGURED_PROPERTIES, builder.build());
         MockMultipartFile file = uploadFile();
 
         server.expect(requestTo(CLOUDINARY_URL))
@@ -102,10 +99,6 @@ class CloudinaryUploadServiceTest {
 
     @Test
     void missingSecureUrlFailsWithSafeMessage(CapturedOutput output) {
-        RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        CloudinaryUploadService service = new CloudinaryUploadService(CONFIGURED_PROPERTIES, builder.build());
-
         server.expect(requestTo(CLOUDINARY_URL))
                 .andRespond(withSuccess("{\"public_id\":\"products/sample\"}", MediaType.APPLICATION_JSON));
 
@@ -122,10 +115,6 @@ class CloudinaryUploadServiceTest {
 
     @Test
     void successfulUploadMapsCloudinaryResponse() {
-        RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        CloudinaryUploadService service = new CloudinaryUploadService(CONFIGURED_PROPERTIES, builder.build());
-
         server.expect(requestTo(CLOUDINARY_URL))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(request -> {

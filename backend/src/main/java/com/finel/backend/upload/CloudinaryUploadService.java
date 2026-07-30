@@ -34,7 +34,6 @@ public class CloudinaryUploadService {
     private static final String FIELD_SECURE_URL = "secure_url";
     private static final String FIELD_SIGNATURE = "signature";
     private static final String FIELD_TIMESTAMP = "timestamp";
-    private static final String DEFAULT_FILENAME = "upload";
     private static final long MAX_IMAGE_BYTES = 5 * 1024 * 1024;
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             MediaType.IMAGE_JPEG_VALUE,
@@ -60,7 +59,6 @@ public class CloudinaryUploadService {
         validate(file);
         ensureConfigured();
 
-        // Keep signed upload steps explicit so validation, logging, and response contracts stay reviewable.
         Map<String, String> signedParams = signedUploadParams();
         LinkedMultiValueMap<String, Object> body = uploadBody(file, signedParams);
         Map<String, Object> response = uploadToCloudinary(body);
@@ -139,7 +137,7 @@ public class CloudinaryUploadService {
             return new ByteArrayResource(bytes) {
                 @Override
                 public String getFilename() {
-                    return file.getOriginalFilename() == null ? DEFAULT_FILENAME : file.getOriginalFilename();
+                    return file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename();
                 }
             };
         } catch (IOException e) {
