@@ -36,16 +36,20 @@ public class InquiryService {
         this.mail = mail;
     }
 
-    /**
-     * Keep the public inquiry contract explicit: validate first, commit through
-     * the separate persistence bean, then send mail outside the DB transaction.
-     */
     public InquiryCreateResponse create(InquiryCreateRequest request) {
         String phone = request.normalizedPhone();
         String message = request.normalizedMessage();
 
-        if (isInvalid(request, phone, message)) {
-            return validationFailure();
+        if (request.name() == null || request.name().isBlank() || phone.isBlank() || message.isBlank()) {
+            return new InquiryCreateResponse(
+                    false,
+                    ERROR_CODE_VALIDATION_FAILED,
+                    STAGE_VALIDATION,
+                    "이름, 연락처, 문의 내용은 필수 입력 항목입니다.",
+                    false,
+                    false,
+                    null,
+                    null);
         }
 
         Inquiry saved;
@@ -59,7 +63,15 @@ public class InquiryService {
                     request.normalizedProduct()));
         } catch (DataAccessException e) {
             log.error("inquiry db write failed: type={} causeType={}", e.getClass().getName(), causeType(e));
-            return dbWriteFailure();
+            return new InquiryCreateResponse(
+                    false,
+                    ERROR_CODE_DB_WRITE_FAILED,
+                    STAGE_DB_WRITE,
+                    "문의 저장에 실패했습니다.",
+                    false,
+                    false,
+                    null,
+                    null);
         }
 
         try {
@@ -70,10 +82,26 @@ public class InquiryService {
                     saved.getId(),
                     e.getClass().getName(),
                     causeType(e));
-            return mailSendFailure(saved);
+            return new InquiryCreateResponse(
+                    false,
+                    ERROR_CODE_MAIL_SEND_FAILED,
+                    STAGE_MAIL_SEND,
+                    "문의는 접수되었지만 알림 발송에 실패했습니다.",
+                    false,
+                    true,
+                    saved.getId(),
+                    null);
         }
 
-        return success(saved);
+        return new InquiryCreateResponse(
+                true,
+                null,
+                STAGE_DONE,
+                "문의가 성공적으로 접수되었습니다.",
+                true,
+                true,
+                saved.getId(),
+                response(saved));
     }
 
     @Transactional(readOnly = true)
@@ -88,58 +116,6 @@ public class InquiryService {
         Inquiry inquiry = repository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("문의를 찾을 수 없습니다."));
         repository.delete(inquiry);
-    }
-
-    private static boolean isInvalid(InquiryCreateRequest request, String phone, String message) {
-        return request.name() == null || request.name().isBlank() || phone.isBlank() || message.isBlank();
-    }
-
-    private static InquiryCreateResponse validationFailure() {
-        return new InquiryCreateResponse(
-                false,
-                ERROR_CODE_VALIDATION_FAILED,
-                STAGE_VALIDATION,
-                "이름, 연락처, 문의 내용은 필수 입력 항목입니다.",
-                false,
-                false,
-                null,
-                null);
-    }
-
-    private static InquiryCreateResponse dbWriteFailure() {
-        return new InquiryCreateResponse(
-                false,
-                ERROR_CODE_DB_WRITE_FAILED,
-                STAGE_DB_WRITE,
-                "문의 저장에 실패했습니다.",
-                false,
-                false,
-                null,
-                null);
-    }
-
-    private static InquiryCreateResponse mailSendFailure(Inquiry saved) {
-        return new InquiryCreateResponse(
-                false,
-                ERROR_CODE_MAIL_SEND_FAILED,
-                STAGE_MAIL_SEND,
-                "문의는 접수되었지만 알림 발송에 실패했습니다.",
-                false,
-                true,
-                saved.getId(),
-                null);
-    }
-
-    private static InquiryCreateResponse success(Inquiry saved) {
-        return new InquiryCreateResponse(
-                true,
-                null,
-                STAGE_DONE,
-                "문의가 성공적으로 접수되었습니다.",
-                true,
-                true,
-                saved.getId(),
-                response(saved));
     }
 
     private static InquiryResponse response(Inquiry inquiry) {
