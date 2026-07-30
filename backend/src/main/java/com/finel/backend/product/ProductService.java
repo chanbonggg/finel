@@ -44,7 +44,8 @@ public class ProductService {
         }
 
         if (categoryId != null) {
-            return listVisibleByCategory(categoryId);
+            categoryReader.get(categoryId);
+            return map(repository.findByCategoryIdAndIsVisibleTrueOrderByCreatedAtDesc(categoryId));
         }
 
         if (includeHidden) {
@@ -55,7 +56,7 @@ public class ProductService {
     }
 
     public List<ProductResponse> featured(int limit) {
-        int normalized = normalizeFeaturedLimit(limit);
+        int normalized = Math.min(Math.max(limit, MIN_FEATURED_LIMIT), MAX_FEATURED_LIMIT);
         return map(repository.findFeaturedVisibleProducts(PageRequest.of(0, normalized)));
     }
 
@@ -67,7 +68,7 @@ public class ProductService {
     }
 
     public List<ProductResponse> search(String query) {
-        String normalizedQuery = normalizeSearchQuery(query);
+        String normalizedQuery = query == null ? "" : query.trim();
         if (normalizedQuery.isEmpty()) {
             return List.of();
         }
@@ -91,7 +92,8 @@ public class ProductService {
     @Transactional
     public ProductResponse update(Integer id, ProductUpdateRequest request) {
         validateRequiredFields(request.name(), request.spec());
-        Product product = findWithCategory(id);
+        Product product = repository.findWithCategoryById(id)
+                .orElseThrow(() -> new NoSuchElementException("제품을 찾을 수 없습니다."));
         Category category = categoryForUpdate(product, request);
         product.update(
                 request.name().trim(),
@@ -114,16 +116,6 @@ public class ProductService {
         publishProductChanged(id, categoryId);
     }
 
-    private List<ProductResponse> listVisibleByCategory(Integer categoryId) {
-        categoryReader.get(categoryId);
-        return map(repository.findByCategoryIdAndIsVisibleTrueOrderByCreatedAtDesc(categoryId));
-    }
-
-    private Product findWithCategory(Integer id) {
-        return repository.findWithCategoryById(id)
-                .orElseThrow(() -> new NoSuchElementException("제품을 찾을 수 없습니다."));
-    }
-
     private Category categoryForUpdate(Product product, ProductUpdateRequest request) {
         if (request.categoryId() == null) {
             return product.getCategory();
@@ -131,10 +123,6 @@ public class ProductService {
         return categoryReader.get(parseId(request.categoryId()));
     }
 
-    /**
-     * Keep cache invalidation next to successful writes so event listeners still
-     * observe only committed product/category mutations.
-     */
     private void publishProductChanged(Integer productId, Integer categoryId) {
         events.publishEvent(new ProductCacheInvalidationEvent(productId, categoryId));
     }
@@ -155,14 +143,6 @@ public class ProductService {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("카테고리 ID가 올바르지 않습니다.");
         }
-    }
-
-    private static int normalizeFeaturedLimit(int limit) {
-        return Math.min(Math.max(limit, MIN_FEATURED_LIMIT), MAX_FEATURED_LIMIT);
-    }
-
-    private static String normalizeSearchQuery(String query) {
-        return query == null ? "" : query.trim();
     }
 
     private static List<ProductResponse> map(List<Product> products) {
