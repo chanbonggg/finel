@@ -4,7 +4,6 @@ import com.finel.backend.common.web.UtcDates;
 import com.finel.backend.inquiry.dto.InquiryCreateRequest;
 import com.finel.backend.inquiry.dto.InquiryCreateResponse;
 import com.finel.backend.inquiry.dto.InquiryResponse;
-import com.finel.backend.mail.MailSendException;
 import com.finel.backend.mail.MailService;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -18,10 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class InquiryService {
     private static final String ERROR_CODE_VALIDATION_FAILED = "VALIDATION_FAILED";
     private static final String ERROR_CODE_DB_WRITE_FAILED = "DB_WRITE_FAILED";
-    private static final String ERROR_CODE_MAIL_SEND_FAILED = "MAIL_SEND_FAILED";
     private static final String STAGE_VALIDATION = "VALIDATION";
     private static final String STAGE_DB_WRITE = "DB_WRITE";
-    private static final String STAGE_MAIL_SEND = "MAIL_SEND";
     private static final String STAGE_DONE = "DONE";
 
     private static final Logger log = LoggerFactory.getLogger(InquiryService.class);
@@ -58,23 +55,14 @@ public class InquiryService {
             return failure(ERROR_CODE_DB_WRITE_FAILED, STAGE_DB_WRITE, "문의 저장에 실패했습니다.", false, null);
         }
 
-        try {
-            mail.sendInquiry(saved);
-        } catch (MailSendException e) {
-            log.warn(
-                    "inquiry mail send failed: inquiryId={} type={} causeType={}",
-                    saved.getId(),
-                    e.getClass().getName(),
-                    causeType(e));
-            return failure(ERROR_CODE_MAIL_SEND_FAILED, STAGE_MAIL_SEND, "문의는 접수되었지만 알림 발송에 실패했습니다.", true, saved.getId());
-        }
+        mail.sendInquiry(saved);
 
         return new InquiryCreateResponse(
                 true,
                 null,
                 STAGE_DONE,
                 "문의가 성공적으로 접수되었습니다.",
-                true,
+                null,
                 true,
                 saved.getId(),
                 response(saved));

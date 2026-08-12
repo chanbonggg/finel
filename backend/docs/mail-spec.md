@@ -16,7 +16,7 @@ Mail 도메인은 독립 API를 제공하지 않고, Inquiry 도메인에서 사
 MailService 구현
 MailProperties 구현
 문의 등록 알림 메일 발송
-메일 발송 실패를 InquiryService가 처리할 수 있게 예외 전달
+메일 발송 실패를 안전한 서버 로그로 기록
 환경 변수 기반 SMTP 설정
 ```
 
@@ -33,7 +33,6 @@ MailProperties 구현
 다음 단계로 넘길 일:
 
 ```text
-비동기 발송
 재시도 큐
 메일 템플릿 HTML 분리
 운영 모니터링/알림
@@ -47,7 +46,7 @@ MailProperties 구현
 
 ```text
 메일 발송 실패는 문의 저장 실패가 아니다.
-메일 실패 시에도 inquirySaved=true를 반환한다.
+메일 실패는 이미 성공한 접수 HTTP 응답을 바꾸지 않는다.
 ```
 
 ## 목표 상태
@@ -58,7 +57,6 @@ MailProperties 구현
 backend/src/main/java/com/finel/backend/mail/
 ├─ MailService.java
 ├─ MailProperties.java
-└─ MailSendException.java
 ```
 
 의존:
@@ -133,7 +131,7 @@ public record InquiryMailRequest(
 메일 제목 생성
 문의 내용을 plain text 또는 간단한 HTML로 구성
 JavaMailSender로 발송
-실패 시 MailSendException throw
+실패 시 inquiry ID와 예외 유형만 로그에 기록
 ```
 
 금지:
@@ -176,23 +174,22 @@ null/blank 표시:
 Mail 도메인 내부 예외:
 
 ```text
-MailSendException
+MailService 내부 로그 기록
 ```
 
 InquiryService 처리:
 
 ```text
-InquiryPersistenceService의 저장 transaction commit 후 MailService 호출
-MailSendException 발생 시 이미 commit된 문의 저장은 유지
-응답은 502 Bad Gateway + MAIL_SEND_FAILED
-inquirySaved=true
-SMTP 내부 상세는 공개 응답에서 제외
+InquiryPersistenceService의 저장 transaction commit 후 MailService 비동기 예약
+SMTP 실패는 이미 commit된 문의 저장이나 성공 응답을 바꾸지 않음
+응답은 201 Created + mailSent=null
+SMTP 내부 상세는 공개 응답과 로그에서 제외
 ```
 
 로그 기준:
 
 ```text
-메일 실패 시 inquiryId, exception class, message 기록
+메일 실패 시 inquiryId, exception class 기록
 MAIL_PASSWORD, SMTP 인증 정보 기록 금지
 문의 content 전문은 debug에서도 기록하지 않음
 ```
@@ -202,7 +199,7 @@ MAIL_PASSWORD, SMTP 인증 정보 기록 금지
 ```text
 MailService에 @Transactional 지정
 DB transaction을 유지한 채 SMTP 호출
-MailSendException으로 저장 transaction rollback
+비동기 SMTP 실패로 저장 transaction rollback
 ```
 
 ## 테스트 기준
@@ -213,15 +210,14 @@ MailSendException으로 저장 transaction rollback
 메일 제목 생성
 본문 필드 매핑
 null/blank 값 "-" 표시
-JavaMailSender 예외 발생 시 MailSendException 변환
+JavaMailSender 예외 발생 시 안전한 로그 기록
 ```
 
 Inquiry 연동 테스트:
 
 ```text
-MailService 성공 시 201 + DONE + mailSent=true + inquiry 객체 반환
-MailService 실패 시 502 + MAIL_SEND_FAILED + inquirySaved=true
-MailService 실패 응답에 SMTP exception 상세 없음
+MailService 예약 시 201 + DONE + mailSent=null + inquiry 객체 반환
+MailService 실패는 HTTP 성공 응답을 유지하고 안전한 로그로 확인
 MailService 실패 후 DB 재조회 시 문의 존재
 DB 저장 실패 시 MailService 호출하지 않음
 ```

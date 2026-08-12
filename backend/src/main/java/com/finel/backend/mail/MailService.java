@@ -2,14 +2,18 @@ package com.finel.backend.mail;
 
 import com.finel.backend.inquiry.Inquiry;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
 @EnableConfigurationProperties(MailProperties.class)
 public class MailService {
     private static final String INQUIRY_SUBJECT = "[FINEL] 새 문의가 접수되었습니다.";
+    private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
     private final JavaMailSender sender;
     private final MailProperties properties;
@@ -19,12 +23,21 @@ public class MailService {
         this.properties = properties;
     }
 
+    @Async("inquiryMailExecutor")
     public void sendInquiry(Inquiry inquiry) {
         try {
             sender.send(createInquiryMessage(inquiry));
         } catch (RuntimeException e) {
-            throw new MailSendException("문의 알림 메일 발송 실패", e);
+            log.warn(
+                    "inquiry mail send failed: inquiryId={} type={} causeType={}",
+                    inquiry.getId(),
+                    e.getClass().getName(),
+                    causeType(e));
         }
+    }
+
+    private static String causeType(Throwable exception) {
+        return exception.getCause() == null ? "none" : exception.getCause().getClass().getName();
     }
 
     /**

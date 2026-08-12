@@ -89,10 +89,10 @@ Backend:  https://api.finel.co.kr
 ## 6. 문의 저장과 메일
 
 - 문의 DB 저장 트랜잭션을 먼저 완료한다.
-- 트랜잭션 커밋 후 메일을 동기 발송한다.
+- 트랜잭션 커밋 후 전용 executor에서 메일을 비동기 발송한다.
 - 메일 실패가 저장 트랜잭션을 rollback하지 않도록 persistence service와 orchestration service를 분리한다.
-- 메일 실패 응답은 `502`, `MAIL_SEND_FAILED`, `inquirySaved=true`, `inquiryId`를 유지한다.
-- SMTP exception message, command, response code 같은 내부 정보는 응답에 포함하지 않고 서버 로그에만 남긴다.
+- 메일 발송 실패는 접수 응답을 바꾸지 않는다. 문의 ID와 예외 유형만 서버 로그에 남긴다.
+- SMTP exception message, command, response code 같은 내부 정보는 응답이나 로그에 포함하지 않는다.
 
 ## 7. 공개 API 동작 변경
 
