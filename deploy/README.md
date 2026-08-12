@@ -23,6 +23,9 @@ before the first launch.
 
 ## First deployment
 
+For a fresh application database, or after completing the Neon migration below,
+start the complete stack:
+
 ```bash
 docker compose config
 docker compose up -d --build
@@ -32,6 +35,59 @@ docker compose logs --tail=100 nginx finel-frontend finel-backend postgres
 
 Only Nginx publishes ports 80 and 443. Do not add public `ports` mappings for
 PostgreSQL, Spring Boot, or Next.js.
+
+## Neon to home-server migration
+
+This is a one-time copy, not continuous replication. It does not delete the
+Neon database. Keep Neon as the rollback source until the migration has been
+stable for at least two weeks.
+
+### Preconditions
+
+- Complete a rehearsal restore before the production cutover.
+- Use a PostgreSQL 18 `pg_dump` client and Neon’s direct/unpooled TLS URL.
+- Confirm the target database settings (name, UTF-8 encoding, locale/collation,
+  timezone) and required extensions match the source.
+- Store the archive under `deploy/migrations/`; that directory is Git-ignored
+  and must not be retained as an unencrypted long-term backup.
+- Keep `SPRING_FLYWAY_ENABLED=false`. Do not run Flyway baseline or clean as
+  part of this migration.
+
+### Restore order
+
+Do not run `docker compose up -d` yet: the backend would connect before the
+database has been restored. The `finel-postgres-18-data` volume is deliberately
+new; never reuse a PostgreSQL 16 data volume with PostgreSQL 18.
+
+1. Freeze every Neon write path: admin changes, inquiry submissions, scheduled
+   jobs, webhooks, and running backend instances. Drain in-flight requests.
+2. Record source row counts, sequence values, and the final dump checksum. Take
+   a Neon snapshot if available.
+3. Start only the database, which initializes the empty database named by
+   `POSTGRES_DB`:
+
+   ```bash
+   docker compose up -d postgres
+   docker compose ps postgres
+   ```
+
+4. Copy the final custom-format archive into the PostgreSQL container, then
+   restore it. Use the application database role for the restore, or grant that
+   role the required database, schema, table, and sequence privileges afterward.
+
+   ```bash
+   docker cp deploy/migrations/finel-final.dump "$(docker compose ps -q postgres):/tmp/finel-final.dump"
+   docker compose exec -T postgres sh -c 'pg_restore --dbname="$POSTGRES_DB" --username="$POSTGRES_USER" --no-owner --no-privileges --exit-on-error --single-transaction /tmp/finel-final.dump'
+   docker compose exec -T postgres sh -c 'psql --dbname="$POSTGRES_DB" --username="$POSTGRES_USER" --command="ANALYZE;"'
+   ```
+
+5. Compare source and target counts, ID/sequence ranges, foreign keys, indexes,
+   and extension availability. Start the backend only after JPA validation
+   succeeds; then start frontend and Nginx.
+
+If restore or validation fails before home-server writes are enabled, stop the
+new stack and keep traffic on Neon. After home-server writes begin, do not
+simply switch back to Neon because the data sets will diverge.
 
 ## Update and rollback
 

@@ -51,6 +51,7 @@ next-env.d.ts
 /nginx/certs/
 /nginx/acme-challenge/
 /deploy/backups/
+/deploy/migrations/
 PROJECT_STATUS.md
 
 MEMORY.md
