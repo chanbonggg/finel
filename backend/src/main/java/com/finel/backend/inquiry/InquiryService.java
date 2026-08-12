@@ -41,15 +41,7 @@ public class InquiryService {
         String message = request.normalizedMessage();
 
         if (request.name() == null || request.name().isBlank() || phone.isBlank() || message.isBlank()) {
-            return new InquiryCreateResponse(
-                    false,
-                    ERROR_CODE_VALIDATION_FAILED,
-                    STAGE_VALIDATION,
-                    "이름, 연락처, 문의 내용은 필수 입력 항목입니다.",
-                    false,
-                    false,
-                    null,
-                    null);
+            return failure(ERROR_CODE_VALIDATION_FAILED, STAGE_VALIDATION, "이름, 연락처, 문의 내용은 필수 입력 항목입니다.", false, null);
         }
 
         Inquiry saved;
@@ -63,15 +55,7 @@ public class InquiryService {
                     request.normalizedProduct()));
         } catch (DataAccessException e) {
             log.error("inquiry db write failed: type={} causeType={}", e.getClass().getName(), causeType(e));
-            return new InquiryCreateResponse(
-                    false,
-                    ERROR_CODE_DB_WRITE_FAILED,
-                    STAGE_DB_WRITE,
-                    "문의 저장에 실패했습니다.",
-                    false,
-                    false,
-                    null,
-                    null);
+            return failure(ERROR_CODE_DB_WRITE_FAILED, STAGE_DB_WRITE, "문의 저장에 실패했습니다.", false, null);
         }
 
         try {
@@ -82,15 +66,7 @@ public class InquiryService {
                     saved.getId(),
                     e.getClass().getName(),
                     causeType(e));
-            return new InquiryCreateResponse(
-                    false,
-                    ERROR_CODE_MAIL_SEND_FAILED,
-                    STAGE_MAIL_SEND,
-                    "문의는 접수되었지만 알림 발송에 실패했습니다.",
-                    false,
-                    true,
-                    saved.getId(),
-                    null);
+            return failure(ERROR_CODE_MAIL_SEND_FAILED, STAGE_MAIL_SEND, "문의는 접수되었지만 알림 발송에 실패했습니다.", true, saved.getId());
         }
 
         return new InquiryCreateResponse(
@@ -102,6 +78,10 @@ public class InquiryService {
                 true,
                 saved.getId(),
                 response(saved));
+    }
+
+    private static InquiryCreateResponse failure(String errorCode, String stage, String message, boolean inquirySaved, Integer inquiryId) {
+        return new InquiryCreateResponse(false, errorCode, stage, message, false, inquirySaved, inquiryId, null);
     }
 
     @Transactional(readOnly = true)
