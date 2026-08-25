@@ -57,7 +57,9 @@ stable for at least two weeks.
 
 Do not run `docker compose up -d` yet: the backend would connect before the
 database has been restored. The `finel-postgres-18-data` volume is deliberately
-new; never reuse a PostgreSQL 16 data volume with PostgreSQL 18.
+new; never reuse a PostgreSQL 16 data volume with PostgreSQL 18. PostgreSQL
+18 mounts this volume at `/var/lib/postgresql` (not the legacy
+`/var/lib/postgresql/data` path).
 
 1. Freeze every Neon write path: admin changes, inquiry submissions, scheduled
    jobs, webhooks, and running backend instances. Drain in-flight requests.
