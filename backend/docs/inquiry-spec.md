@@ -189,29 +189,26 @@ DB 저장 실패:
 }
 ```
 
-메일 발송 실패:
+백그라운드 메일 발송:
 
 ```text
-502 Bad Gateway
+접수 응답에는 영향을 주지 않음
 ```
 
 ```json
 {
-  "success": false,
-  "errorCode": "MAIL_SEND_FAILED",
-  "stage": "MAIL_SEND",
-  "inquirySaved": true,
   "inquiryId": 1,
-  "message": "문의는 접수되었지만 알림 발송에 실패했습니다."
+  "mailSent": null,
+  "message": "메일은 백그라운드에서 발송됩니다."
 }
 ```
 
 주의:
 
 ```text
-현재 프론트는 res.ok || data.inquirySaved이면 사용자에게 성공으로 안내한다.
-메일 실패 시에도 inquirySaved=true를 반드시 유지한다.
-SMTP exception message/code/command는 공개 응답에 포함하지 않는다.
+프론트는 201 응답을 받으면 사용자에게 성공으로 안내한다.
+메일 실패는 접수 응답을 바꾸지 않으며 서버 로그와 관리자 문의 목록으로 확인한다.
+SMTP exception message/code/command는 공개 응답이나 로그에 포함하지 않는다.
 ```
 
 ### GET /api/inquiries
@@ -373,7 +370,7 @@ InquiryService.createInquiry()
 ```text
 InquiryService 전체를 하나의 @Transactional로 감싸기
 같은 class 내부 self-invocation으로 save transaction 분리 시도
-MailSendException을 transaction 밖으로 전파해 저장 rollback 유발
+비동기 SMTP 실패로 저장 rollback 유발
 DB transaction을 연 상태로 SMTP 응답 대기
 ```
 
@@ -411,14 +408,14 @@ phone/company/product는 nullable 허용
 401: 관리자 인증 필요
 404: 삭제 대상 없음
 500: DB 저장 실패
-502: 메일 발송 실패, 단 inquirySaved=true
+메일 발송 실패: HTTP 201 접수 성공을 유지하고 서버 로그로 기록
 ```
 
 로그 기준:
 
 ```text
 DB 저장 실패는 exception class/message 기록
-메일 실패는 inquiry id와 exception class/message 기록
+메일 실패는 inquiry id와 exception class 기록
 고객 개인정보 전체를 INFO 로그에 남기지 않음
 ```
 
@@ -442,10 +439,9 @@ phone/content/product 기존 필드 처리
 email optional 처리
 필수값 누락 VALIDATION_FAILED
 DB 저장 실패 DB_WRITE_FAILED
-메일 실패 MAIL_SEND_FAILED + 502 + inquirySaved=true
-메일 실패 응답에 SMTP 내부 상세가 없음
-메일 성공 DONE + 201 + mailSent=true + inquiry 객체 반환
-메일 실패 후 별도 조회 transaction에서 Inquiry 존재 확인
+메일 발송 예약 DONE + 201 + mailSent=null + inquiry 객체 반환
+메일 실패는 HTTP 응답에 SMTP 내부 상세를 노출하지 않음
+메일 실패 후 별도 조회 transaction에서 Inquiry 존재 및 안전한 로그 확인
 ```
 
 Controller:

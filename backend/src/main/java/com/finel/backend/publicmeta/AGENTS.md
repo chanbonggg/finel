@@ -53,9 +53,7 @@
 - E2E에서는 `src/app/sitemap.ts`의 Prisma import 제거, 제품/카테고리 URL 생성, hidden URL 제외를 확인한다.
 - Windows에서는 `backend`에서 `.\gradlew.bat test`를 실행한다.
 
-## 이번 구현 변경
+## 운영 기준
 
-- visible 제품의 id/updatedAt과 전체 카테고리 id만 반환하는 sitemap API를 구현했다.
-- projection을 사용하고 결과는 id 오름차순, UTC 문자열 계약을 따른다.
-- 검증: Spring 컴파일 및 tester의 숨김 제품 제외 테스트 대상이다.
-- tester: projection 응답의 최소 필드와 UTC ISO 문자열 계약 테스트를 추가했다.
+- sitemap 데이터는 visible 제품의 `id`/`updatedAt`, 전체 카테고리 `id`만 반환한다.
+- projection, id 오름차순, UTC 문자열을 유지하며 hidden 제품 제외를 회귀 검증한다.

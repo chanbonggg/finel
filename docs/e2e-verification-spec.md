@@ -270,7 +270,7 @@ POST /api/inquiries
 201 Created
 success=true
 stage=DONE
-mailSent=true
+mailSent=null (백그라운드 메일 발송 예약)
 inquiry 객체 포함
 email 미입력 또는 blank여도 저장 가능
 사용자에게 접수 성공 안내
@@ -285,7 +285,7 @@ content/message 누락 → 400 VALIDATION_FAILED
 rate limit 초과 → 429
 ```
 
-### 7. 메일 실패 처리
+### 7. 백그라운드 메일 실패 처리
 
 조건:
 
@@ -302,22 +302,22 @@ POST /api/inquiries
 통과 기준:
 
 ```text
-502 Bad Gateway
-success=false
-errorCode=MAIL_SEND_FAILED
-stage=MAIL_SEND
-inquirySaved=true
+201 Created
+success=true
+stage=DONE
+mailSent=null
 inquiryId 존재
 SMTP 내부 오류 상세가 응답에 없음
 프론트는 문의 접수 성공으로 안내
 DB에 문의가 저장되어 있음
+서버 로그에 inquiryId와 예외 유형만 기록됨
 ```
 
 실패 기준:
 
 ```text
 메일 실패 때문에 문의 저장이 rollback됨
-inquirySaved가 false 또는 누락됨
+메일 실패가 201 접수 성공 응답을 502로 바꿈
 프론트가 사용자에게 단순 실패로만 안내
 ```
 

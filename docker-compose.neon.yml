@@ -1,0 +1,82 @@
+# Local integration smoke test only. This file does not create PostgreSQL or
+# expose the app beyond 127.0.0.1. Docker Compose automatically reads the
+# repository root .env, which contains the existing Neon application credentials.
+services:
+  finel-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on: {}
+    environment:
+      SPRING_PROFILES_ACTIVE: db
+      # A smoke test must not baseline or migrate the existing Neon database.
+      SPRING_FLYWAY_ENABLED: "false"
+      DB_URL: ${DB_URL:?DB_URL must be set to the Neon JDBC URL}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME must be set}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      FRONTEND_ORIGIN: http://127.0.0.1:8081
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      AUTH_COOKIE_SECURE: "false"
+      AUTH_COOKIE_DOMAIN: ""
+      ADMIN_BOOTSTRAP_ENABLED: "false"
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_TO: ${MAIL_TO:-}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-finel/products}
+      NEXT_REVALIDATE_URL: http://finel-frontend:3000/internal/revalidate
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:?REVALIDATE_SECRET must be set}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - finel-neon-smoke
+
+  finel-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api
+        SERVER_API_BASE_URL: http://finel-backend:8080
+        NEXT_PUBLIC_SITE_URL: http://127.0.0.1:8081
+    depends_on:
+      finel-backend:
+        condition: service_healthy
+    environment:
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:?REVALIDATE_SECRET must be set}
+      SERVER_API_BASE_URL: http://finel-backend:8080
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1));"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - finel-neon-smoke
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      finel-frontend:
+        condition: service_healthy
+      finel-backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:80"
+    volumes:
+      - ./nginx/conf.d/finel.neon.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - finel-neon-smoke
+
+networks:
+  finel-neon-smoke:
+    driver: bridge

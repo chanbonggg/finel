@@ -24,11 +24,11 @@
 - `POST /api/inquiries`는 인증과 CSRF 없이 공개 접근 가능하다.
 - `phoneNumber ?? phone`, `message ?? content`, `productName ?? product` alias를 모두 지원한다.
 - name, 연락처, 문의 내용은 필수이고 trim 후 blank를 거부한다. email은 선택이며 null/blank를 `""`로 저장한다.
-- 성공은 201, `stage=DONE`, `mailSent=true`, 저장된 inquiry DTO를 반환한다.
+- 성공은 201, `stage=DONE`, `mailSent=null`(백그라운드 발송 예약), 저장된 inquiry DTO를 반환한다.
 - 검증 실패는 400, `VALIDATION_FAILED`, `stage=VALIDATION`이다.
 - DB 저장 실패는 500, `DB_WRITE_FAILED`, `stage=DB_WRITE`, `inquirySaved=false`다.
-- 메일 실패는 502, `MAIL_SEND_FAILED`, `stage=MAIL_SEND`, `inquirySaved=true`, `inquiryId`를 반환한다.
-- SMTP exception message, response code, command를 공개 응답에 포함하지 않는다.
+- 메일 발송 실패는 HTTP 응답에 영향을 주지 않으며, `inquiryId`와 예외 유형만 서버 로그에 남긴다.
+- SMTP exception message, response code, command를 공개 응답이나 로그에 포함하지 않는다.
 - 공개 문의 rate limit 기본값은 IP 기준 3회/10분이다. 임의의 forwarded header를 신뢰하지 않는다.
 
 ## 관리자 계약
@@ -40,12 +40,12 @@
 
 ## 트랜잭션 경계
 
-- 순서는 검증 → `InquiryPersistenceService.save()` commit → `MailService` 호출이다.
+- 순서는 검증 → `InquiryPersistenceService.save()` commit → 비동기 `MailService` 발송 예약이다.
 - `InquiryPersistenceService.save()`만 저장 트랜잭션을 가진 별도 bean이어야 한다.
 - `InquiryService.createInquiry()` 전체를 `@Transactional`로 감싸지 않는다.
 - 같은 클래스의 self-invocation으로 트랜잭션 분리를 시도하지 않는다.
-- SMTP 호출 동안 DB transaction을 열어 두지 않는다.
-- `MailSendException`이 이미 commit된 문의를 rollback하게 하지 않는다.
+- SMTP 호출 동안 요청 또는 DB transaction을 열어 두지 않는다.
+- 비동기 메일 실패가 이미 commit된 문의를 rollback하게 하지 않는다.
 - DB 저장 실패 시 MailService를 호출하지 않는다.
 
 ## 의존성과 개인정보
@@ -66,16 +66,13 @@
 
 - 모든 alias 조합, blank 필수값, optional email을 검증한다.
 - DB 실패 시 MailService 미호출과 `inquirySaved=false`를 검증한다.
-- 메일 실패 시 502 응답 후 별도 조회 트랜잭션에서 문의가 남아 있음을 검증한다.
+- 메일 발송 실패 후에도 접수 응답은 201이며 별도 조회에서 문의가 남아 있음을 검증한다.
 - SMTP 상세가 응답에 노출되지 않는지 검증한다.
 - 관리자 목록·삭제의 401/403/404와 정렬을 검증한다.
 - JavaMailSender는 mock하고 기본 테스트에서 실제 SMTP를 호출하지 않는다.
 - Windows에서는 `backend`에서 `.\gradlew.bat test`를 실행한다.
 
-## 이번 구현 변경
+## 운영 기준
 
-- legacy/current 입력 필드를 정규화하고 필수값을 검증한다.
-- 별도 `REQUIRES_NEW` persistence service에서 저장·commit한 뒤 메일을 발송한다.
-- 메일 실패는 502, `inquirySaved=true`, `inquiryId`를 유지하며 목록·삭제 관리자 API를 구현했다.
-- 검증: Spring 컴파일 및 tester의 저장 후 메일 실패/rollback 분리 테스트 대상이다.
-- tester: 저장 후 메일 실패 시 `inquirySaved=true`/`inquiryId` 유지와 검증 실패 시 저장·메일 미호출 테스트를 추가했다.
+- legacy/current 입력 alias를 계속 정규화하며, 별도 persistence bean의 commit 후에만 메일을 발송한다.
+- 메일 실패는 접수 성공 응답을 바꾸지 않는다. 관리자는 문의 목록과 서버 로그로 실패를 확인하며, 이 경계는 프론트 접수 UX와 함께 회귀 검증한다.

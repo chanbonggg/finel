@@ -149,7 +149,7 @@ Spring에서도 최소한 다음 두 필드는 유지한다.
 - `ErrorResponse`의 기본 필드는 `success`, `message`다.
 - `errorCode`, `stage`는 문의 등록처럼 프론트가 단계별 실패를 구분해야 하는 API에서만 추가한다.
 - `inquirySaved`는 문의 등록 API 전용 필드이며 전역 공통 응답 필드로 승격하지 않는다.
-- 문의 DB 저장 실패에서는 `inquirySaved=false`, 메일 발송 실패에서는 `inquirySaved=true`를 반환한다.
+- 문의 DB 저장 실패에서는 `inquirySaved=false`를 반환한다. 메일 발송은 저장 후 비동기로 예약하며 실패를 HTTP 응답에 반영하지 않는다.
 
 ### 인증 방식
 
@@ -1893,27 +1893,24 @@ DB 저장 실패:
 
 ```text
 DB 저장 실패는 문의가 저장되지 않은 상태이므로 inquirySaved=false를 명시한다.
-메일 발송 실패는 문의가 저장된 상태이므로 inquirySaved=true를 명시한다.
+메일 발송은 저장 후 백그라운드에서 예약하며, 완료 또는 실패 여부는 접수 HTTP 응답에 반영하지 않는다.
 ```
 
-메일 발송 실패:
+백그라운드 메일 발송:
 
 ```http
-502 Bad Gateway
+접수 응답에는 영향을 주지 않음
 ```
 
 ```json
 {
-  "success": false,
-  "errorCode": "MAIL_SEND_FAILED",
-  "stage": "MAIL_SEND",
-  "inquirySaved": true,
   "inquiryId": 1,
-  "message": "문의는 접수되었지만 알림 발송에 실패했습니다."
+  "mailSent": null,
+  "message": "메일은 백그라운드에서 발송됩니다."
 }
 ```
 
-SMTP exception message, response code, command 같은 내부 정보는 공개 응답에 포함하지 않는다. 서버 로그에는 `inquiryId`, exception class와 안전하게 정제한 message만 기록한다.
+SMTP exception message, response code, command 같은 내부 정보는 공개 응답이나 로그에 포함하지 않는다. 실패 시 서버 로그에는 `inquiryId`와 예외 유형만 기록한다.
 
 Success status:
 
@@ -1928,7 +1925,7 @@ Success response:
   "success": true,
   "stage": "DONE",
   "message": "문의가 성공적으로 접수되었습니다.",
-  "mailSent": true,
+  "mailSent": null,
   "inquiry": {
     "id": 1,
     "name": "홍길동",
@@ -1966,15 +1963,15 @@ InquiryController.createInquiry()
 → request에서 phone/message/product 정규화
 → 필수값 검증
 → Inquiry 저장
-→ MailService.sendInquiryMail()
-→ 성공/메일 실패 응답 분리
+→ MailService 비동기 발송 예약
+→ 메일 완료를 기다리지 않고 성공 응답
 ```
 
 중요:
 
-- 현재 프론트는 `res.ok || data.inquirySaved`이면 사용자에게 성공으로 안내한다.
-- 따라서 메일 발송 실패라도 `inquirySaved: true`가 있으면 사용자는 문의 접수 성공으로 본다.
-- Spring에서도 이 동작을 유지해야 현재 UX가 깨지지 않는다.
+- 프론트는 201 응답을 받으면 사용자에게 접수 성공을 안내한다.
+- `mailSent: null`은 메일 발송이 예약됐지만 HTTP 응답 시점에는 완료 여부를 알 수 없음을 뜻한다.
+- 메일 실패는 접수 UX를 바꾸지 않으며 관리자는 문의 목록과 서버 로그로 확인한다.
 
 메일 내용 현재 포함 정보:
 
@@ -2424,7 +2421,7 @@ POST /api/inquiries
 
 그 다음 메일 발송을 붙인다.
 
-메일 발송 실패 시에도 `inquirySaved: true`를 반환하는 계약을 유지한다.
+메일 발송은 비동기로 예약하며, 실패해도 접수 성공 응답을 유지한다.
 
 ### 5단계: 인증 API
 

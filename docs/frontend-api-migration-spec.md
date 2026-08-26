@@ -364,7 +364,7 @@ GET/DELETE /api/inquiries는 관리자 인증 필요.
 ```text
 VALIDATION_FAILED
 DB_WRITE_FAILED
-MAIL_SEND_FAILED
+비동기 메일 발송 실패는 HTTP 응답에 포함하지 않음
 inquirySaved
 ```
 

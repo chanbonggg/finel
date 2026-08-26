@@ -8,6 +8,10 @@ import { PARTNERS } from "@/constants/partners";
 import { SEO } from "@/constants/seo";
 import type { Product } from "@/lib/api/products";
 
+// Product data is available only after the Compose network starts. The fetches
+// below remain Data Cache-backed, but must not run while the image is built.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: `${SEO.siteNameKo} 산업용 공압 부품 | ${SEO.siteName}`,
   description: `${SEO.siteNameKo}(${SEO.siteName})은 산업용 공압 부품과 pneumatic parts 제품 도입을 돕는 전문 기업입니다. Parker, IMI Norgren, SNS Pneumatic, KCC 등 주요 브랜드 제품 상담과 견적 문의를 지원합니다.`,

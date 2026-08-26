@@ -8,15 +8,7 @@ import type { Category, Product } from '@/lib/api/types';
 
 export type { Category, Product };
 
-type SuccessResponse = { success: boolean; message?: string };
-type CategoryMutationResponse = SuccessResponse & { category: Category };
-type ProductMutationResponse = SuccessResponse & { product: Product };
 type ErrorLike = Error & { status?: number; errorCode?: string; data?: { message?: string; errorCode?: string } };
-
-function requireSuccess<T extends SuccessResponse>(result: T): T {
-    if (result.success !== true) throw new Error(result.message || '요청에 실패했습니다.');
-    return result;
-}
 
 function errorDetails(error: unknown): { status?: number; code?: string; message: string } {
     const value = error as ErrorLike;
@@ -109,7 +101,7 @@ export function useProductAdmin() {
         if (!name) { alert('카테고리 이름을 입력해 주세요.'); return; }
         if (!selectedCompanyId) { alert('회사를 먼저 선택해 주세요.'); return; }
         try {
-            const data = requireSuccess<CategoryMutationResponse>(await createCategory({ name, companyId: selectedCompanyId }));
+            const data = await createCategory({ name, companyId: selectedCompanyId });
             setCategories(previous => [...previous, data.category]);
             setNewProduct(previous => ({ ...previous, categoryId: String(data.category.id) }));
             setIsAddingCategory(false);
@@ -123,7 +115,7 @@ export function useProductAdmin() {
     const handleDeleteCategory = async (id: number) => {
         if (!confirm('이 카테고리를 삭제하시겠습니까?')) return;
         try {
-            const data = requireSuccess<SuccessResponse>(await deleteCategory(id));
+            const data = await deleteCategory(id);
             setCategories(previous => previous.filter(category => category.id !== id));
             if (newProduct.categoryId === String(id)) setNewProduct(previous => ({ ...previous, categoryId: '' }));
             alert(data.message || '카테고리가 삭제되었습니다.');
@@ -149,12 +141,12 @@ export function useProductAdmin() {
         const payload = { ...newProduct, name, spec, categoryId: newProduct.categoryId };
         try {
             if (editingProductId !== null) {
-                const data = requireSuccess<ProductMutationResponse>(await updateProduct(editingProductId, payload));
+                const data = await updateProduct(editingProductId, payload);
                 setProducts(previous => previous.map(product => product.id === editingProductId ? data.product : product));
                 alert(data.message || '제품 수정이 완료되었습니다.');
                 resetForm();
             } else {
-                const data = requireSuccess<ProductMutationResponse>(await createProduct(payload));
+                const data = await createProduct(payload);
                 setProducts(previous => [data.product, ...previous]);
                 alert(data.message || '제품 등록이 완료되었습니다.');
                 setNewProduct({ name: '', categoryId: '', spec: '', description: '', imageUrl: '' });
@@ -182,7 +174,7 @@ export function useProductAdmin() {
     const handleDelete = async (id: number) => {
         if (!confirm('삭제하시겠습니까?')) return;
         try {
-            const data = requireSuccess<SuccessResponse>(await deleteProduct(id));
+            const data = await deleteProduct(id);
             setProducts(previous => previous.filter(product => product.id !== id));
             alert(data.message || '제품이 삭제되었습니다.');
         } catch (error) {

@@ -4,9 +4,13 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { getCategory as fetchCategory } from "@/lib/api/categories";
 import { getProducts } from "@/lib/api/products";
+import { safeJsonLd, truncateMeta, uniqueStrings } from "@/lib/metadata-utils";
 import { SEO } from "@/constants/seo";
 import { getSiteUrl } from "@/lib/site-url";
 import ProductCard from "@/features/products/components/ProductCard";
+
+// Category data is fetched through the backend after the Compose network starts.
+export const dynamic = "force-dynamic";
 
 type PageProps = {
     params: Promise<{ id: string }>;
@@ -23,18 +27,6 @@ const getCategory = cache(async function getCategory(id: string) {
     if (!category) return null;
     return { ...category, products: await getProducts({ categoryId }) };
 });
-
-function safeJsonLd(obj: Record<string, unknown>): string {
-    return JSON.stringify(obj).replace(/<\/script/gi, "<\\/script");
-}
-
-function uniqueStrings(values: Array<string | null | undefined>): string[] {
-    return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]));
-}
-
-function truncateMeta(value: string, length = 158): string {
-    return value.length > length ? `${value.slice(0, length - 1).trim()}…` : value;
-}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { id } = await params;
@@ -95,6 +87,7 @@ export default async function CategoryPage({ params }: PageProps) {
     }
 
     const siteUrl = getSiteUrl();
+    // Use the same public-visible list for JSON-LD, empty state, and rendered cards.
     const visibleProducts = category.products.filter((product) => product.isVisible);
     const pageUrl = `${siteUrl}/products/category/${category.id}`;
     const jsonLd = {
@@ -165,13 +158,13 @@ export default async function CategoryPage({ params }: PageProps) {
             </section>
 
             <section className="grid grid-cols-3 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
-                {category.products.length === 0 && (
+                {visibleProducts.length === 0 && (
                     <div className="surface-card col-span-full p-8 text-center text-[var(--color-muted)]">
                         등록된 제품이 없습니다.
                     </div>
                 )}
 
-                {category.products.map((product) => (
+                {visibleProducts.map((product) => (
                     <ProductCard key={product.id} product={product} categoryLabel={category.name} />
                 ))}
             </section>

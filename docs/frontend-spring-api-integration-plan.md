@@ -55,10 +55,10 @@ Spring 백엔드의 실제 Controller, DTO, Security 설정을 기준으로 프�
 
 - `POST /api/inquiries`는 공개이며 CSRF 예외다.
 - 현재 폼의 legacy 필드 `phone`, `content`, `product`도 백엔드가 지원한다. 새 표준 필드 `phoneNumber`, `message`, `productName`으로 프론트를 정리하되 한 번에 혼용하지 않는다.
-- 성공: `201`, `success=true`, `stage=DONE`, `mailSent=true`, `inquirySaved=true`, `inquiryId`, `inquiry`.
+- 성공: `201`, `success=true`, `stage=DONE`, `mailSent=null`(백그라운드 발송 예약), `inquirySaved=true`, `inquiryId`, `inquiry`.
 - 검증 실패: `400`, `VALIDATION_FAILED`, `stage=VALIDATION`.
 - DB 실패: `500`, `DB_WRITE_FAILED`, `stage=DB_WRITE`, `inquirySaved=false`.
-- 메일 실패: `502`, `MAIL_SEND_FAILED`, `stage=MAIL_SEND`, `inquirySaved=true`, `inquiryId`. 이 경우 UI는 접수 성공으로 처리하되 알림 전송 실패 내부 정보는 노출하지 않는다.
+- 메일 실패: HTTP 접수 성공을 유지한다. UI는 201만으로 접수 성공을 처리하고, 알림 실패 내부 정보는 노출하지 않는다.
 - rate limit: IP 기준 3회/10분, 초과 시 `429 RATE_LIMITED`.
 
 ### 3.3 인증과 관리자 API

@@ -127,7 +127,7 @@ MailService mock 테스트 가능
 POST /api/inquiries
 InquiryPersistenceService 별도 transaction
 MailService 연동
-VALIDATION_FAILED/DB_WRITE_FAILED/MAIL_SEND_FAILED 응답 구현
+VALIDATION_FAILED/DB_WRITE_FAILED 응답 구현과 비동기 MailService 예약
 ```
 
 검증:
@@ -135,10 +135,10 @@ VALIDATION_FAILED/DB_WRITE_FAILED/MAIL_SEND_FAILED 응답 구현
 ```text
 필수값 누락 400
 email 누락 시 "" 저장
-메일 성공 201 + mailSent=true + inquiry 반환
-메일 실패 502 + inquirySaved=true
+메일 발송 완료를 기다리지 않고 201 + mailSent=null + inquiry 반환
+메일 실패는 HTTP 성공 응답을 유지하고 문의 ID만 서버 로그에 남김
 메일 실패 후 DB 재조회에서 문의 존재
-SMTP 내부 오류 상세는 공개 응답에 없음
+SMTP 내부 오류 상세는 공개 응답이나 로그에 없음
 DB 실패 시 inquirySaved=false
 ```
 
@@ -153,8 +153,8 @@ Spring 문의 API 배포 제외
 
 ```text
 문의 저장과 메일 실패 처리가 분리되어 있다.
-DB commit 후 SMTP를 호출하며 메일 실패가 rollback을 유발하지 않는다.
-기존 프론트가 inquirySaved=true를 성공으로 처리할 수 있다.
+DB commit 후 SMTP 작업을 예약하며 메일 실패가 rollback을 유발하지 않는다.
+기존 프론트가 메일 발송 완료를 기다리지 않고 접수 성공을 처리할 수 있다.
 ```
 
 ## 3단계: Spring Boot 인증 API 구현
