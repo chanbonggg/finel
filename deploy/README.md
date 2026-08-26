@@ -1,8 +1,9 @@
 # Finel deployment runbook
 
-This runbook deploys the repository-managed Compose stack. It does not install
-Docker, configure DNS, or issue TLS certificates; complete those server tasks
-before the first launch.
+This runbook deploys the repository-managed Compose stack behind Cloudflare
+Tunnel. It does not install Docker, configure DNS, create the Tunnel, or
+configure its public hostnames; complete those server tasks before the first
+launch.
 
 ## Server inputs
 
@@ -10,16 +11,9 @@ before the first launch.
 2. Copy `.env.production.example` to the repository-root `.env` and replace every
    placeholder with production values. Keep `SPRING_FLYWAY_ENABLED=false` for an
    existing database unless its Flyway baseline has been separately approved.
-3. Place the certificate chain and private key at:
-
-   ```text
-   nginx/certs/fullchain.pem
-   nginx/certs/privkey.pem
-   ```
-
-   These files are ignored by Git. If using ACME HTTP-01, put challenge files
-   under `nginx/acme-challenge/`; port 80 serves only that path before redirecting
-   all other traffic to HTTPS.
+3. Configure the Tunnel public hostname (for example, `www.finel.co.kr`) to
+   target `http://127.0.0.1:8081`. Cloudflare terminates TLS; do not add local
+   certificate files or open public ports 80/443 for this stack.
 
 ## First deployment
 
@@ -33,8 +27,8 @@ docker compose ps
 docker compose logs --tail=100 nginx finel-frontend finel-backend postgres
 ```
 
-Only Nginx publishes ports 80 and 443. Do not add public `ports` mappings for
-PostgreSQL, Spring Boot, or Next.js.
+Only Nginx publishes `127.0.0.1:8081`, the Cloudflare Tunnel origin. Do not add
+public `ports` mappings for PostgreSQL, Spring Boot, or Next.js.
 
 ## Neon to home-server migration
 
@@ -124,7 +118,7 @@ volume.
 
 ## Deployment checks
 
-- Confirm public pages and `/api/*` work through the HTTPS hostname.
+- Confirm public pages and `/api/*` work through the Cloudflare HTTPS hostname.
 - Confirm external `/internal/revalidate` returns `403`.
 - Test login, CSRF-protected admin mutations, image upload, and inquiry mail.
 - Edit a product/category and confirm a cache-invalidation success or failure log;
