@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import ProductSearch from '@/features/products/components/ProductSearch';
 import FineIcon from './FineIcon';
+import CategoryMenu from './CategoryMenu';
+import type { Category } from '@/lib/api/types';
 
-export default function Navbar({ categories }: { categories: { id: number; name: string }[] }) {
+export default function Navbar({ categories }: { categories: Category[] }) {
   return (
     <header className="relative z-30 bg-white text-sm">
       <div className="border-b border-[var(--color-line)]">
@@ -19,16 +21,7 @@ export default function Navbar({ categories }: { categories: { id: number; name:
       </div>
       <nav aria-label="제품 메뉴" className="border-b border-[var(--color-line)]">
         <div className="site-container flex min-h-[49px] items-center gap-5">
-          <details className="relative shrink-0">
-            <summary className="flex cursor-pointer list-none items-center gap-2 font-bold"><FineIcon name="Menu" />전체 제품 카테고리</summary>
-            <div className="absolute top-full mt-3 grid w-60 gap-1 rounded-md border border-[var(--color-line)] bg-white p-2 shadow">
-              <Link className="px-3 py-2" href="/products">전체 제품</Link>
-              {categories.map(c => <Link className="break-words px-3 py-2 hover:bg-[var(--color-paper)]" key={c.id} href={`/products/category/${c.id}`}>{c.name}</Link>)}
-            </div>
-          </details>
-          <div className="ml-8 hidden min-w-0 flex-1 items-center gap-6 lg:flex">
-            {categories.slice(0, 5).map(c => <Link className="truncate" key={c.id} href={`/products/category/${c.id}`}>{c.name}</Link>)}
-          </div>
+          <CategoryMenu categories={categories} />
           <Link className="ml-auto flex shrink-0 items-center gap-2 font-bold" href="/products"><FineIcon name="Columns2" />제품 목록 · 비교</Link>
         </div>
       </nav>
