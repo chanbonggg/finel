@@ -18,6 +18,7 @@ class FinelBackendApplicationTests {
     @MockBean CategoryRepository categoryRepository;
     @MockBean InquiryRepository inquiryRepository;
     @MockBean ProductRepository productRepository;
+    @MockBean com.finel.backend.catalog.CatalogRepository catalogRepository;
     @MockBean JavaMailSender mailSender;
 
     @Test

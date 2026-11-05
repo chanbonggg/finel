@@ -27,7 +27,7 @@ export default function CategoryManager({
     if (!isAdding) {
         return (
             <div className="flex gap-2">
-                <AdminSelect
+                <AdminSelect aria-label="제품군"
                     value={selectedCategoryId}
                     onChange={(e) => onSelectCategory(e.target.value)}
                 >
@@ -36,7 +36,7 @@ export default function CategoryManager({
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                 </AdminSelect>
-                <button
+                <button type="button"
                     onClick={() => onToggleAdding(true)}
                     className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 rounded-lg text-sm font-bold transition whitespace-nowrap"
                 >
@@ -51,13 +51,13 @@ export default function CategoryManager({
             {/* 카테고리 추가 입력창 */}
             <div className="flex gap-2 mb-3">
                 <AdminInput
-                    placeholder="새 카테고리 이름"
+                    aria-label="새 제품군 이름" placeholder="새 제품군 이름"
                     value={newCategoryName}
                     onChange={(e) => onNewCategoryNameChange(e.target.value)}
                     autoFocus
                 />
-                <button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 text-white px-3 rounded-lg font-bold whitespace-nowrap">추가</button>
-                <button onClick={() => onToggleAdding(false)} className="text-gray-500 hover:text-gray-700 px-2 font-bold whitespace-nowrap">닫기</button>
+                <button type="button" onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 text-white px-3 rounded-lg font-bold whitespace-nowrap">추가</button>
+                <button type="button" onClick={() => onToggleAdding(false)} className="text-gray-500 hover:text-gray-700 px-2 font-bold whitespace-nowrap">닫기</button>
             </div>
 
             {/* 삭제 가능한 카테고리 목록 */}
@@ -67,10 +67,10 @@ export default function CategoryManager({
                     {categories.map((cat) => (
                         <li key={cat.id} className="flex justify-between items-center bg-white px-3 py-2 rounded border border-gray-100 text-sm shadow-sm">
                             <span className="text-gray-700">{cat.name}</span>
-                            <button
+                            <button type="button"
                                 onClick={() => onDelete(cat.id)}
                                 className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition"
-                                title="삭제하기"
+                                aria-label={cat.name + " 삭제"}
                             >
                                 🗑️
                             </button>

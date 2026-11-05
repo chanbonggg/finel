@@ -23,7 +23,15 @@ export interface Product {
   isVisible: boolean;
   createdAt: string;
   updatedAt: string;
+  modelName: string | null;
+  useCase: string | null;
+  specifications: Specification[];
+  catalogFileId: number | null;
+  catalogPage: number | null;
 }
+
+export interface Specification { name: string; value: string }
+export interface Catalog { id: number; sizeBytes: number; pageCount: number; createdAt: string }
 
 export interface Category {
   id: number;
@@ -49,14 +57,15 @@ export interface ProductCreateRequest {
   spec: string;
   description: string;
   imageUrl: string;
+  modelName?: string | null;
+  useCase?: string | null;
+  specifications?: Specification[];
+  catalogFileId?: number | null;
+  catalogPage?: number | null;
 }
 
-export interface ProductUpdateRequest {
-  name: string;
+export interface ProductUpdateRequest extends Omit<ProductCreateRequest, 'categoryId'> {
   categoryId?: string;
-  spec: string;
-  description: string;
-  imageUrl: string;
   isVisible?: boolean;
 }
 
@@ -84,7 +93,7 @@ export interface InquiryCreateRequest {
   phoneNumber: string;
   email?: string;
   message: string;
-  productName: string;
+  productName?: string;
   company: string;
 }
 

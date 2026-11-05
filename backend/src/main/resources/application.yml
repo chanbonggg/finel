@@ -13,6 +13,11 @@ spring:
           time_zone: UTC
   jackson:
     time-zone: UTC
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 10MB
+      file-size-threshold: 0
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -41,6 +46,8 @@ logging:
     level: "%5p [requestId:%X{requestId:-}]"
 
 app:
+  catalog:
+    root: ${CATALOG_STORAGE_ROOT:./data/catalogs}
   cors:
     allowed-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
   auth:

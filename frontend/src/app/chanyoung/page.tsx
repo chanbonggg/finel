@@ -1,64 +1,43 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import InquiryTab from '@/features/admin/components/InquiryTap'
+import FineIcon from '@/components/FineIcon';
+import InquiryTab from '@/features/admin/components/InquiryTap';
 import ProductTab from '@/features/admin/components/ProductTap';
 import { logout } from '@/lib/api/auth';
 
 export default function AdminPage() {
-    const [activeTab, setActiveTab] = useState("inquiry");
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const router = useRouter();
+  const [tab, setTab] = useState<'products' | 'inquiries'>('products');
+  const [editing, setEditing] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
+  const locked = useRef(false);
+  const router = useRouter();
 
-    const handleLogout = async () => {
-        if (isLoggingOut) return;
-        setIsLoggingOut(true);
-        try {
-            await logout();
-            router.replace('/chanyoung/login');
-        } catch (error) {
-            const value = error as Error & { status?: number; data?: { message?: string } };
-            alert(value.data?.message || value.message || '로그아웃에 실패했습니다. 다시 시도해 주세요.');
-        } finally {
-            setIsLoggingOut(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-6xl mx-auto">
-                {/* 상단 헤더 */}
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500">관리자님 환영합니다 </span>
-                        <button onClick={handleLogout} disabled={isLoggingOut} className="text-sm text-red-500 hover:underline disabled:text-gray-400">
-                            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
-                        </button>
-                    </div>
-                </div>
-
-                {/* 탭 버튼 */}
-                <div className="flex gap-4 mb-6">
-                    <button
-                        onClick={() => setActiveTab("inquiry")}
-                        className={`px-6 py-2 rounded-lg font-bold ${activeTab === "inquiry" ? "bg-blue-600 text-white" : "bg-white text-gray-600"}`}
-                    >
-                        문의 내역
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("product")}
-                        className={`px-6 py-2 rounded-lg font-bold ${activeTab === "product" ? "bg-blue-600 text-white" : "bg-white text-gray-600"}`}
-                    >
-                        제품 관리
-                    </button>
-                </div>
-
-                {/* 탭 내용 보여주기 (조건부 렌더링) */}
-                {activeTab === "inquiry" && <InquiryTab />}
-                {activeTab === "product" && <ProductTab />}
-            </div>
-        </div>
-    );
+  return <div className="grid min-h-screen grid-cols-[216px_minmax(0,1fr)] max-md:grid-cols-1">
+    <aside className="border-r border-[var(--color-line)] bg-white max-md:border-r-0">
+      <div className="flex h-[72px] items-center gap-3 border-b border-[var(--color-line)] px-6"><strong className="text-2xl font-black">FineL</strong><span className="site-muted">관리자</span></div>
+      <nav aria-label="관리자 메뉴" className="flex gap-2 p-4 md:grid">
+        <p className="site-muted hidden text-xs md:block">사이트 관리</p>
+        <button aria-current={tab === 'products' ? 'page' : undefined} onClick={() => setTab('products')} className={`flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-bold ${tab === 'products' ? 'bg-[var(--color-selected)] text-[var(--color-blue)]' : ''}`}><FineIcon name="Package" />상품 관리</button>
+        <button disabled={Boolean(editing)} aria-current={tab === 'inquiries' ? 'page' : undefined} onClick={() => setTab('inquiries')} className={`flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-bold ${tab === 'inquiries' ? 'bg-[var(--color-selected)] text-[var(--color-blue)]' : ''}`}><FineIcon name="Mail" />문의 메일</button>
+      </nav>
+      <p className="site-muted mx-6 mt-10 hidden text-xs md:block">산업용 공압 부품<br/>상품 정보 · 제품 문의 관리</p>
+    </aside>
+    <main className="min-w-0 bg-[var(--color-paper)]">
+      <header className="flex min-h-[72px] flex-wrap items-center justify-between gap-2 border-b border-[var(--color-line)] bg-white px-5 text-sm md:px-9">
+        <p className="site-muted">관리자 / {tab === 'products' ? '상품 관리' : '문의 메일'}{editing && ` / ${editing}`}</p>
+        <div className="flex items-center gap-4"><Link className="flex items-center gap-1" href="/" target="_blank" rel="noopener noreferrer">사이트 보기 <FineIcon name="ExternalLink" /></Link>
+          <button disabled={loggingOut || Boolean(editing)} className="site-muted" onClick={async () => {
+            if (locked.current) return;
+            locked.current = true; setLoggingOut(true);
+            try { await logout(); router.replace('/chanyoung/login'); }
+            catch { alert('로그아웃에 실패했습니다. 다시 시도해 주세요.'); }
+            finally { locked.current = false; setLoggingOut(false); }
+          }}>{loggingOut ? '로그아웃 중…' : '로그아웃'}</button></div>
+      </header>
+      <div className="p-5 md:p-9">{tab === 'products' ? <ProductTab onFormChange={setEditing} /> : <InquiryTab />}</div>
+    </main>
+  </div>;
 }

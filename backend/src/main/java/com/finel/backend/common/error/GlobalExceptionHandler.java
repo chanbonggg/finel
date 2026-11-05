@@ -78,6 +78,16 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    ResponseEntity<ErrorResponse> explicitStatus(org.springframework.web.server.ResponseStatusException exception) {
+        return ResponseEntity.status(exception.getStatusCode()).body(new ErrorResponse("파일 요청을 처리할 수 없습니다."));
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ErrorResponse> uploadTooLarge() {
+        return error(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기 한도를 초과했습니다.");
+    }
+
     /**
      * Centralize default error envelopes so status/message contracts stay
      * visible while errorCode and stage remain reserved for specific APIs.

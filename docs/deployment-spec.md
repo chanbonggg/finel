@@ -1,5 +1,7 @@
 # Finel container deployment specification
 
+The current Compose ingress is Cloudflare Tunnel → Nginx on `127.0.0.1:8081` → Spring/Next. The direct TLS design below is historical. The active runbook, including the catalog volume, PDF parser and V2 rollout requirements, is [deploy/README.md](../deploy/README.md#catalog-storage-and-schema-rollout).
+
 ## Purpose and scope
 
 This specification defines the first reproducible deployment unit for Finel. The

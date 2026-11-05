@@ -2,6 +2,46 @@
 
 작성일: 2026-05-28
 
+## 0. 상품·카탈로그·문의 읽음 계약 (2026-11-05)
+
+이 절은 Spring 백엔드 확장 계약이다. 아래의 이전 작업 기록에 있는 예시는 기존 필드와 호출 형식을 설명한다.
+
+### 상품
+
+`POST /api/products`는 `name`, `categoryId`만 필수다. `spec` 생략, `null`, 공백은 `""`로 저장한다. `PATCH /api/products/{id}`는 `name`을 받고, `categoryId` 또는 `spec`이 생략되거나 `null`이면 기존 값을 보존한다. 규격을 지울 때는 `"spec": ""`를 보낸다. 기존 설명·이미지·공개 여부의 쓰기 동작과 `categoryId`의 문자열/정수 호환을 유지한다. 아래의 새 문자열 길이 제한은 UTF-16 코드 단위로 센다.
+
+| 추가 필드 | 값과 제한 | POST 기본값 | PATCH 변경 규칙 |
+| --- | --- | --- | --- |
+| `modelName` | 문자열 200자 | `null` | 생략은 유지, `null`/공백은 해제 |
+| `useCase` | 문자열 10,000자 | `null` | 생략은 유지, `null`/공백은 해제 |
+| `specifications` | 순서 있는 `[{"name":"항목", "value":"값"}]`, 최대 50행 | `[]` | 생략은 유지, 배열은 대체, `[]`는 해제 |
+| `catalogFileId`, `catalogPage` | 양의 정수. 저장 후 두 값이 모두 있어야 하며 `catalogPage <= pageCount` | 둘 다 `null` | 생략은 유지. 둘을 `null`로 보내면 연결 해제 |
+
+규격 행은 `name` 100자, `value` 500자까지 허용한다. 앞뒤 공백을 제거한 두 값이 모두 필요하고, 같은 항목명은 한 번만 입력할 수 있다. 부분 행·추가 키·`null` 배열·잘못된 타입이나 페이지는 `400`, 존재하지 않는 문서 ID는 `404`다. 같은 문서는 여러 상품에서 서로 다른 시작 페이지로 사용할 수 있다.
+
+제품명은 비어 있지 않은 JSON 문자열이다. 상품 텍스트와 규격 행에 NUL 문자가 있으면 `400`을 반환한다.
+
+모든 상품 응답에 위 다섯 필드를 추가한다. 기존 키·응답 형태와 공개 여부를 유지한다. `companyId`는 제품군에서 파생한다. 검색은 공개 상품의 이름·모델명·용도에서 대소문자를 구분하지 않고 부분 일치하며 최신순 최대 10개를 반환한다.
+
+### 카탈로그 PDF
+
+| 호출 | 권한 | 요청 | 성공 응답 |
+| --- | --- | --- | --- |
+| `POST /api/uploads/catalogs` | 관리자·CSRF | JSON `{"sizeBytes":123}` | `201` `{success, upload:{uploadId, chunkSize, expiresAt}}` |
+| `POST /api/uploads/catalogs/{uploadId}/chunks/{index}` | 업로드 소유 관리자·CSRF | `application/octet-stream` 본문. 0부터 순서대로 전송 | `200` `{success, upload:{nextIndex, receivedBytes}}` |
+| `POST /api/uploads/catalogs/{uploadId}/complete` | 업로드 소유 관리자·CSRF | 본문 없음 | `200` `{success, catalog:{id, sizeBytes, pageCount, createdAt}}` |
+| `DELETE /api/uploads/catalogs/{uploadId}` | 업로드 소유 관리자·CSRF | 본문 없음 | `200` `{success, message}` |
+| `GET /api/catalogs/{id}` | 관리자 | 없음 | `200` `{success, catalog:{id, sizeBytes, pageCount, createdAt}}` |
+| `GET /api/catalogs/{id}/file` | 공개 | 선택적 `Range` 헤더 | `200` 또는 `206`, `application/pdf` |
+
+파일당 `1–1,000,000,000`바이트, 조각당 `8,388,608`바이트다. 마지막 조각만 남은 바이트 수에 맞춘다. 업로드는 시작 후 1시간에 만료되고 관리자당 1개, 서버 전체 4개까지 허용한다. 완료 요청은 모든 조각 수신 후 PDF의 페이지 수와 비암호화 여부를 검증한다. 검증 실패 후에는 새 업로드가 필요하다. 시작 페이지는 파일 URL 뒤에 `#page={catalogPage}`를 붙여 뷰어에 전달할 수 있다.
+
+`400`은 잘못된 입력·짧은 조각·PDF 검증 실패, `404`는 타 관리자 세션·없거나 만료된 세션·없는 문서/파일, `409`는 조각 순서 위반·중복·조각 누락, `413`은 크기 한도 초과, `416`은 잘못된 Range, `429`는 활성 업로드 한도 초과, `503`은 검증 실행 환경 문제, `507`은 디스크 여유 부족이다. 잘못된 조각이 저장되지 않은 경우 동일 인덱스로 재전송할 수 있다. 확정된 카탈로그는 상품 연결 해제·숨김·삭제 이후에도 공개 조회할 수 있다.
+
+### 문의 읽음
+
+`PATCH /api/inquiries/{id}/read`는 관리자 인증과 CSRF를 요구한다. 요청은 `{"isRead":true}`이며 `200` `{success, message, inquiry}`로 기존 문의 응답을 반환한다. 누락·`null`·`false`는 `400`, 없는 문의는 `404`다. 반복 요청 결과는 동일하다. 공개 문의의 상품명 미선택과 `productName`/`product` alias는 기존과 같다.
+
 ## 1. 문서 목적
 
 이 문서는 Finel 프로젝트를 Spring Boot 백엔드로 이전하기 전에, 현재 Next.js API Route가 제공하는 API 계약을 정리한 문서다.
@@ -1010,7 +1050,7 @@ Request:
 ```text
 name 필수
 categoryId 필수
-spec 필수
+spec 선택
 ```
 
 Fail response:
@@ -2561,17 +2601,9 @@ Spring 이전 시 개선 후보:
 
 단, 이것은 API 계약 변경은 아니고 운영 편의 개선이다.
 
-### `isRead` 변경 API 없음
+### `isRead` 변경 API
 
-`Inquiry` 모델에는 `isRead`가 있지만 현재 읽음 처리 API는 없다.
-
-Spring 이전 범위에는 포함하지 않는다.
-
-필요하면 나중에 추가한다.
-
-```text
-PATCH /api/inquiries/{id}/read
-```
+관리자 읽음 요청은 0절의 `PATCH /api/inquiries/{id}/read` 계약을 따른다.
 
 ## 16. API 계약 정리 완료 기준
 

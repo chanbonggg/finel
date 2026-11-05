@@ -2,6 +2,11 @@ package com.finel.backend.product;
 
 import com.finel.backend.category.Category;
 import com.finel.backend.category.CategoryReader;
+import com.finel.backend.catalog.CatalogReader;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.finel.backend.product.dto.Specification;
+import java.util.ArrayList;
+import java.util.HashSet;
 import com.finel.backend.common.cache.ProductCacheInvalidationEvent;
 import com.finel.backend.common.web.UtcDates;
 import com.finel.backend.product.dto.ProductCreateRequest;
@@ -25,17 +30,19 @@ public class ProductService {
     private final ProductRepository repository;
     private final CategoryReader categoryReader;
     private final ApplicationEventPublisher events;
+    private final CatalogReader catalogs;
 
     /** Kept for focused unit tests that do not boot a Spring application context. */
     public ProductService(ProductRepository repository, CategoryReader categoryReader) {
-        this(repository, categoryReader, event -> { });
+        this(repository, categoryReader, event -> { }, null);
     }
 
     @Autowired
-    public ProductService(ProductRepository repository, CategoryReader categoryReader, ApplicationEventPublisher events) {
+    public ProductService(ProductRepository repository, CategoryReader categoryReader, ApplicationEventPublisher events, CatalogReader catalogs) {
         this.repository = repository;
         this.categoryReader = categoryReader;
         this.events = events;
+        this.catalogs = catalogs;
     }
 
     public List<ProductResponse> list(boolean includeHidden, Integer categoryId) {
@@ -77,31 +84,34 @@ public class ProductService {
 
     @Transactional
     public ProductResponse create(ProductCreateRequest request) {
-        validateRequiredFields(request.name(), request.spec());
+        String name = requiredName(request.name());
         Category category = categoryReader.get(parseId(request.categoryId()));
-        Product product = repository.save(Product.create(
-                request.name().trim(),
+        Product product = Product.create(
+                name,
                 category,
-                request.spec().trim(),
-                request.description(),
-                request.imageUrl()));
+                request.spec() == null ? "" : databaseText(request.spec(), "spec").strip(),
+                databaseText(request.description(), "description"),
+                databaseText(request.imageUrl(), "imageUrl"));
+        applyDetails(product, request.modelName(), request.useCase(), request.specifications(), request.catalogFileId(), request.catalogPage());
+        product = repository.save(product);
         publishProductChanged(product.getId(), category.getId());
         return response(product);
     }
 
     @Transactional
     public ProductResponse update(Integer id, ProductUpdateRequest request) {
-        validateRequiredFields(request.name(), request.spec());
+        String name = requiredName(request.name());
         Product product = repository.findWithCategoryById(id)
                 .orElseThrow(() -> new NoSuchElementException("제품을 찾을 수 없습니다."));
         Category category = categoryForUpdate(product, request);
         product.update(
-                request.name().trim(),
+                name,
                 category,
-                request.spec().trim(),
-                request.description(),
-                request.imageUrl(),
+                request.spec() == null ? product.getSpec() : databaseText(request.spec(), "spec").strip(),
+                databaseText(request.description(), "description"),
+                databaseText(request.imageUrl(), "imageUrl"),
                 request.isVisible());
+        applyDetails(product, request.modelName(), request.useCase(), request.specifications(), request.catalogFileId(), request.catalogPage());
         repository.flush();
         publishProductChanged(product.getId(), category.getId());
         return response(product);
@@ -127,10 +137,72 @@ public class ProductService {
         events.publishEvent(new ProductCacheInvalidationEvent(productId, categoryId));
     }
 
-    private static void validateRequiredFields(String name, String spec) {
-        if (name == null || name.isBlank() || spec == null || spec.isBlank()) {
-            throw new IllegalArgumentException("제품명, 카테고리, 사양은 필수입니다.");
+    private static String requiredName(JsonNode name) {
+        if (name == null || !name.isTextual() || name.textValue().isBlank()) {
+            throw new IllegalArgumentException("제품명은 비어 있지 않은 문자열이어야 합니다.");
         }
+        return databaseText(name.textValue(), "name").strip();
+    }
+
+    private static String databaseText(String value, String field) {
+        if (value != null && value.indexOf('\0') >= 0) {
+            throw new IllegalArgumentException(field + "에 NUL 문자를 사용할 수 없습니다.");
+        }
+        return value;
+    }
+
+    private static void limit(String value, int max, String field) {
+        if (value != null && value.length() > max) throw new IllegalArgumentException(field + "의 최대 길이는 " + max + "자입니다.");
+    }
+
+    private void applyDetails(Product product, JsonNode model, JsonNode useCase, JsonNode rows, JsonNode file, JsonNode page) {
+        String modelName = text(model, product.getModelName(), 200, "modelName");
+        String usage = text(useCase, product.getUseCase(), 10000, "useCase");
+        List<Specification> specifications = rows == null ? product.getSpecifications() : specifications(rows);
+        Integer fileId = integer(file, product.getCatalogFileId());
+        Integer startPage = integer(page, product.getCatalogPage());
+        if ((fileId == null) != (startPage == null)) throw new IllegalArgumentException("카탈로그 ID와 시작 페이지를 함께 지정하거나 해제하세요.");
+        if (fileId != null && (file != null || page != null)) {
+            var catalog = catalogs.get(fileId);
+            if (startPage > catalog.getPageCount()) throw new IllegalArgumentException("카탈로그 페이지 범위를 벗어났습니다.");
+        }
+        product.updateDetails(modelName, usage, specifications, fileId, startPage);
+    }
+
+    private static String text(JsonNode value, String previous, int max, String field) {
+        if (value == null) return previous;
+        if (value.isNull()) return null;
+        if (!value.isTextual()) throw new IllegalArgumentException(field + "는 문자열이어야 합니다.");
+        limit(value.textValue(), max, field);
+        String trimmed = databaseText(value.textValue(), field).strip();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static Integer integer(JsonNode value, Integer previous) {
+        if (value == null) return previous;
+        if (value.isNull()) return null;
+        if (!value.isIntegralNumber() || !value.canConvertToInt() || value.intValue() < 1) {
+            throw new IllegalArgumentException("카탈로그 ID와 페이지는 양의 정수여야 합니다.");
+        }
+        return value.intValue();
+    }
+
+    private static List<Specification> specifications(JsonNode rows) {
+        if (!rows.isArray() || rows.size() > 50) throw new IllegalArgumentException("상세 규격은 최대 50개의 배열이어야 합니다.");
+        List<Specification> result = new ArrayList<>();
+        var names = new HashSet<String>();
+        for (JsonNode row : rows) {
+            if (!row.isObject() || row.size() != 2 || !row.has("name") || !row.has("value")) {
+                throw new IllegalArgumentException("상세 규격에는 name과 value만 필요합니다.");
+            }
+            String name = text(row.get("name"), null, 100, "specifications.name");
+            String value = text(row.get("value"), null, 500, "specifications.value");
+            if (name == null || value == null || !names.add(name)) {
+                throw new IllegalArgumentException("상세 규격의 항목명과 값은 필수이며 항목명은 중복될 수 없습니다.");
+            }
+            result.add(new Specification(name, value));
+        }
+        return result;
     }
 
     private static Integer parseId(String id) {
@@ -162,6 +234,8 @@ public class ProductService {
                 product.getImageUrl(),
                 product.getIsVisible(),
                 UtcDates.format(product.getCreatedAt()),
-                UtcDates.format(product.getUpdatedAt()));
+                UtcDates.format(product.getUpdatedAt()),
+                product.getModelName(), product.getUseCase(), product.getSpecifications(),
+                product.getCatalogFileId(), product.getCatalogPage());
     }
 }

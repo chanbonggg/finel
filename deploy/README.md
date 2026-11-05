@@ -30,6 +30,32 @@ docker compose logs --tail=100 nginx finel-frontend finel-backend postgres
 Only Nginx publishes `127.0.0.1:8081`, the Cloudflare Tunnel origin. Do not add
 public `ports` mappings for PostgreSQL, Spring Boot, or Next.js.
 
+## Catalog storage and schema rollout
+
+- Check the target Flyway history and approve the additive V2 migration before starting the new backend. The backend uses `ddl-auto=validate` and requires the new product columns and `CatalogFile` table. The Neon smoke stack keeps Flyway off and requires a compatible test schema.
+- The backend uses the `finel-catalog-data` volume at `/var/lib/finel/catalogs`. The image prepares the mount for its non-root `finel` user. Keep one backend writer per volume. The Neon smoke stack uses a separate volume. Preserve these volumes during container replacement.
+- Nginx retains the 10 MiB request ceiling. Catalog chunks use up to 8 MiB each and completion can take up to 35 seconds for PDF inspection. The file response disables Nginx buffering and supports Range reads. Verify the full public proxy path with a representative 1 GB PDF before enabling the UI.
+- Provision space for retained PDFs, up to four active uploads of 1 GB each, and temporary chunks. The application keeps a 256 MiB free-space reserve. Temporary sessions expire after one hour and are discarded on backend restart.
+- For a consistent backup, pause catalog writes, take a PostgreSQL dump, and archive the volume's `files/` directory together. Restore both into isolated storage, retain the `finel` user's access, compare file counts and sizes with `CatalogFile`, and verify product references plus `200` and `206` downloads. Keep the database and files from the same backup point.
+- A canceled product edit can leave a valid catalog available for reuse. After backup, an operator can audit unreferenced `CatalogFile` rows against `Product.catalogFileId`, verify no editor is using the candidate, and retire the metadata and its matching file together. Also reconcile any file without metadata after a crash between the file move and database commit. The app cleans up temporary files automatically. It never deletes a shared catalog when one product is deleted.
+
+### Applying V2 on the server
+
+Confirm the target database and take and verify a backup using the procedure below. In that database, check `SELECT to_regclass('public.flyway_schema_history');`. If the table exists, check `SELECT version, type, success FROM public.flyway_schema_history ORDER BY installed_rank;`. Proceed with a normal migration when the history shows a successful V1 and V2 is pending.
+
+An existing populated schema without a history table needs a separately approved version 1 baseline. Compare its schema with V1 and test the baseline and V2 upgrade against a restored backup first. Keep automatic baselining off in the normal server profile.
+
+With the approved revision checked out, build the images before the maintenance window. Start the backend first and verify its startup logs, health check, and successful version 2 history entry before switching the frontend. Use the following commands only for the confirmed V1-to-V2 path.
+
+```bash
+docker compose build finel-backend finel-frontend
+SPRING_FLYWAY_ENABLED=true docker compose up -d --no-deps finel-backend
+docker compose logs --tail=100 finel-backend
+docker compose exec -T finel-backend curl -fsS http://localhost:8080/actuator/health
+```
+
+After those checks pass, start the new frontend with `docker compose up -d --no-deps finel-frontend` and recreate Nginx with `docker compose up -d --no-deps --force-recreate nginx` so it loads the revised configuration and resolves the current upstream containers. Verify the public and administrator flows over the HTTPS hostname. If the backend does not start, stop the rollout and investigate the migration or validation error before switching the frontend.
+
 ## Neon to home-server migration
 
 This is a one-time copy, not continuous replication. It does not delete the

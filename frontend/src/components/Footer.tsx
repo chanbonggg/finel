@@ -6,7 +6,7 @@ export default function Footer() {
             <div className="site-container">
                 <div className="mb-6 flex flex-wrap gap-x-6 gap-y-2 font-bold text-[var(--color-body)]">
                     <Link href="/privacy" className="hover:text-[var(--color-ink)]">개인정보처리방침</Link>
-                    <Link href="/about" className="hover:text-[var(--color-ink)]">오시는 길</Link>
+                    <Link href="/about#directions" className="hover:text-[var(--color-ink)]">오시는 길</Link>
                     <Link href="/contact" className="hover:text-[var(--color-ink)]">문의하기</Link>
                 </div>
 
@@ -22,6 +22,8 @@ export default function Footer() {
                         인천광역시 동구 방축로 37번길 30, 2-206
                         <span className="mx-2 text-[var(--color-line)]">|</span>
                         Tel: 02-2693-3569
+                        <span className="mx-2 text-[var(--color-line)]">|</span>
+                        Fax: 032-232-8823
                         <span className="mx-2 text-[var(--color-line)]">|</span>
                         Email: kimcw153@gmail.com
                     </p>

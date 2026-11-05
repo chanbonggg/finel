@@ -4,12 +4,23 @@ import type { CsrfResponse, LoginResponse, MessageResponse, VerifyResponse } fro
 
 let csrfToken: string | null = null;
 let csrfHeaderName = 'X-XSRF-TOKEN';
+let pendingCsrf: Promise<string> | undefined;
 
 export async function getCsrfToken(): Promise<string> {
   if (csrfToken) {
     logAuthDebug('csrf-cache-hit');
     return csrfToken;
   }
+  if (pendingCsrf) return pendingCsrf;
+  pendingCsrf = requestCsrf();
+  try {
+    return await pendingCsrf;
+  } finally {
+    pendingCsrf = undefined;
+  }
+}
+
+async function requestCsrf(): Promise<string> {
   logAuthDebug('csrf-request-start');
   try {
     const data = await apiRequest<CsrfResponse>('/api/auth/csrf', { cache: 'no-store' });

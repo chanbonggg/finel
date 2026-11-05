@@ -29,6 +29,7 @@ services:
           condition: service_healthy
       environment:
         SPRING_PROFILES_ACTIVE: db
+        CATALOG_STORAGE_ROOT: /var/lib/finel/catalogs
         SPRING_FLYWAY_ENABLED: ${SPRING_FLYWAY_ENABLED:?SPRING_FLYWAY_ENABLED must be set}
         DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?POSTGRES_DB must be set}
         DB_USERNAME: ${POSTGRES_USER:?POSTGRES_USER must be set}
@@ -54,6 +55,9 @@ services:
         REVALIDATE_SECRET: ${REVALIDATE_SECRET:?REVALIDATE_SECRET must be set}
       networks:
         - finel-internal
+
+      volumes:
+        - finel-catalog-data:/var/lib/finel/catalogs
 
     finel-frontend:
       build:
@@ -94,3 +98,4 @@ volumes:
   # PostgreSQL 18 must initialize a new cluster. Never mount a volume created
   # by PostgreSQL 16 here; migrate it with pg_dump/pg_restore instead.
   finel-postgres-18-data:
+  finel-catalog-data:

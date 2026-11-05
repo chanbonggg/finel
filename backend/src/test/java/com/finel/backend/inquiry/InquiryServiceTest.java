@@ -16,6 +16,25 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(OutputCaptureExtension.class)
 class InquiryServiceTest {
     @Test
+    void readIsIdempotentAndOnlyChangesReadFlag() {
+        InquiryRepository repository = mock(InquiryRepository.class);
+        Inquiry inquiry = Inquiry.create("name", "phone", "", "body", "company", "legacy product");
+        inquiry.prePersist();
+        ReflectionTestUtils.setField(inquiry, "id", 3);
+        when(repository.findById(3)).thenReturn(java.util.Optional.of(inquiry));
+        InquiryService service = new InquiryService(repository, mock(InquiryPersistenceService.class), mock(MailService.class));
+        var first = service.markRead(3, true);
+        var second = service.markRead(3, true);
+        assertThat(first).isEqualTo(second);
+        assertThat(second.isRead()).isTrue();
+        assertThat(second.content()).isEqualTo("body");
+        assertThat(second.product()).isEqualTo("legacy product");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.markRead(3, false)).isInstanceOf(IllegalArgumentException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.markRead(3, null)).isInstanceOf(IllegalArgumentException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.markRead(4, true)).isInstanceOf(java.util.NoSuchElementException.class);
+    }
+
+    @Test
     void returnsSuccessAfterSchedulingMail() {
         InquiryRepository repository = mock(InquiryRepository.class);
         InquiryPersistenceService persistence = mock(InquiryPersistenceService.class);
@@ -36,6 +55,7 @@ class InquiryServiceTest {
         assertThat(result.inquirySaved()).isTrue();
         assertThat(result.mailSent()).isNull();
         assertThat(result.inquiryId()).isEqualTo(41);
+        assertThat(result.inquiry().product()).isEmpty();
         verify(persistence).save(any(Inquiry.class));
         verify(mail).sendInquiry(any(Inquiry.class));
     }

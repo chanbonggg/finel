@@ -1,13 +1,16 @@
 package com.finel.backend.inquiry;
 
+import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.finel.backend.common.web.ApiResponse;
 import com.finel.backend.inquiry.dto.InquiryCreateRequest;
 import com.finel.backend.inquiry.dto.InquiryCreateResponse;
+import com.finel.backend.inquiry.dto.InquiryReadRequest;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,6 +38,12 @@ public class InquiryController {
     @GetMapping
     public Map<String, Object> list() {
         return Map.of("success", true, "inquiries", service.list());
+    }
+
+    @PatchMapping("/{id}/read")
+    public Map<String, Object> read(@PathVariable Integer id, @RequestBody InquiryReadRequest request) {
+        return Map.of("success", true, "message", "문의를 읽음 처리했습니다.",
+                "inquiry", service.markRead(id, BooleanNode.TRUE.equals(request.isRead())));
     }
 
     @DeleteMapping("/{id}")

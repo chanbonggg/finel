@@ -2,7 +2,7 @@ package com.finel.backend.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -32,13 +32,61 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
 class SecurityIntegrationTest {
+    @Test
+    void readEndpointEnforcesAuthenticationCsrfValidationAndMissingInquiry() throws Exception {
+        String path = "/api/inquiries/999/read";
+        mvc.perform(patch(path).with(realCsrf()).contentType(MediaType.APPLICATION_JSON).content("{\"isRead\":true}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(patch(path).with(user("admin")).contentType(MediaType.APPLICATION_JSON).content("{\"isRead\":true}"))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.errorCode").value("CSRF_INVALID"));
+        for (String body : List.of("{}", "{\"isRead\":null}", "{\"isRead\":false}", "{\"isRead\":\"true\"}")) {
+            mvc.perform(patch(path).with(user("admin")).with(realCsrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(patch(path).with(user("admin")).with(realCsrf()).contentType(MediaType.APPLICATION_JSON).content("{\"isRead\":true}"))
+                .andExpect(status().isNotFound());
+        var inquiry = com.finel.backend.inquiry.Inquiry.create("name", "phone", "", "body", null, "old name");
+        ReflectionTestUtils.setField(inquiry, "id", 999);
+        ReflectionTestUtils.setField(inquiry, "createdAt", java.time.LocalDateTime.now(java.time.ZoneOffset.UTC));
+        when(inquiryRepository.findById(999)).thenReturn(Optional.of(inquiry));
+        mvc.perform(patch(path).with(user("admin")).with(realCsrf()).contentType(MediaType.APPLICATION_JSON).content("{\"isRead\":true}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.inquiry.id").value(999))
+                .andExpect(jsonPath("$.inquiry.isRead").value(true));
+    }
+
+    @Test
+    void catalogRoutesProtectAllUploadStagesAndOnlyFileGetIsPublic() throws Exception {
+        String id = "00000000-0000-0000-0000-000000000000";
+        for (String path : List.of("/api/uploads/catalogs", "/api/uploads/catalogs/" + id + "/chunks/0",
+                "/api/uploads/catalogs/" + id + "/complete")) {
+            mvc.perform(post(path).with(realCsrf())).andExpect(status().isUnauthorized());
+            mvc.perform(post(path).with(user("admin"))).andExpect(status().isForbidden());
+        }
+        mvc.perform(delete("/api/uploads/catalogs/" + id).with(realCsrf())).andExpect(status().isUnauthorized());
+        mvc.perform(delete("/api/uploads/catalogs/" + id).with(user("admin"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/catalogs/999")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/catalogs/999/file").cookie(new Cookie("auth_token", "invalid"))).andExpect(status().isNotFound());
+    }
+
     @Autowired MockMvc mvc;
     @Autowired PasswordEncoder passwordEncoder;
     @MockBean AdminRepository adminRepository;
     @MockBean CategoryRepository categoryRepository;
     @MockBean InquiryRepository inquiryRepository;
     @MockBean ProductRepository productRepository;
+    @MockBean com.finel.backend.catalog.CatalogRepository catalogRepository;
     @MockBean JavaMailSender mailSender;
+
+    private org.springframework.test.web.servlet.request.RequestPostProcessor realCsrf() throws Exception {
+        var response = mvc.perform(get("/api/auth/csrf")).andReturn().getResponse();
+        Cookie cookie = response.getCookie("XSRF-TOKEN");
+        String token = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response.getContentAsString()).get("token").asText();
+        return request -> {
+            request.setCookies(cookie);
+            request.addHeader("X-XSRF-TOKEN", token);
+            return request;
+        };
+    }
 
     @Test
     void csrfEndpointIssuesReadableCookieAndToken() throws Exception {
@@ -76,7 +124,7 @@ class SecurityIntegrationTest {
         ReflectionTestUtils.setField(admin, "id", 1);
         when(adminRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
 
-        Cookie auth = mvc.perform(post("/api/auth/login").with(csrf())
+        Cookie auth = mvc.perform(post("/api/auth/login").with(realCsrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"admin\",\"password\":\"correct-password\"}"))
                 .andExpect(status().isOk())
@@ -91,6 +139,11 @@ class SecurityIntegrationTest {
                 .andExpect(jsonPath("$.user.username").value("admin"))
                 .andExpect(jsonPath("$.user.iat").isNumber())
                 .andExpect(jsonPath("$.user.exp").isNumber());
+
+        mvc.perform(patch("/api/inquiries/999/read").cookie(auth)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"isRead\":true}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("CSRF_INVALID"));
     }
 
     @Test

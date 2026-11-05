@@ -1,202 +1,71 @@
 'use client';
 
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import FineIcon from '@/components/FineIcon';
 import { useDebounce } from '@/hooks/useDebounce';
 import { translateSearchQuery } from '@/lib/searchKeywordMap';
 import { searchProducts, type Product } from '@/lib/api/products';
 
-export default function ProductSearch() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState<Product[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [searchError, setSearchError] = useState(false);
+export default function ProductSearch({ primary = false }: { primary?: boolean }) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [state, setState] = useState<{ query: string; items: Product[]; failed: boolean }>();
+  const term = query.trim();
+  const debounced = useDebounce(term, 300);
+  const router = useRouter();
+  const id = useId();
 
-    const debouncedQuery = useDebounce(query, 300);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const router = useRouter();
+  useEffect(() => {
+    if (!debounced) return;
+    const controller = new AbortController();
+    const alias = translateSearchQuery(debounced);
+    const queries = alias.toLowerCase() === debounced.toLowerCase() ? [debounced] : [debounced, alias];
+    void Promise.allSettled(queries.map(q => searchProducts(q, controller.signal))).then(([original, translated]) => {
+      if (controller.signal.aborted) return;
+      const items = [...(original.status === 'fulfilled' ? original.value : []), ...(translated?.status === 'fulfilled' ? translated.value : [])];
+      setState({ query: debounced, items: [...new Map(items.map(item => [item.id, item])).values()].slice(0, 10), failed: original.status === 'rejected' });
+    });
+    return () => controller.abort();
+  }, [debounced]);
 
-    const closeSearch = useCallback(() => {
-        setIsOpen(false);
-        setQuery('');
-        setResults([]);
-        setSearchError(false);
-    }, []);
+  const matches = state?.query === term ? state : undefined;
+  const items = matches?.items ?? [];
+  const visible = open && Boolean(term);
+  const go = (url: string) => { setOpen(false); setActive(-1); router.push(url); };
 
-    useEffect(() => {
-        if (!debouncedQuery.trim()) {
-            setResults([]);
-            setSearchError(false);
-            return;
-        }
-
-        const controller = new AbortController();
-        const translatedQuery = translateSearchQuery(debouncedQuery);
-
-        const fetchResults = async () => {
-            setIsLoading(true);
-            setSearchError(false);
-            try {
-                setResults(await searchProducts(translatedQuery, controller.signal));
-            } catch (error) {
-                if (controller.signal.aborted ||
-                    (error instanceof DOMException && error.name === 'AbortError') ||
-                    (error instanceof Error && error.name === 'AbortError')) return;
-                setResults([]);
-                setSearchError(true);
-            } finally {
-                if (!controller.signal.aborted) setIsLoading(false);
+  return (
+    <form role="search" className="relative" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}
+      onSubmit={e => { e.preventDefault(); go(items[active] ? `/products/${items[active].id}` : term ? `/products?q=${encodeURIComponent(term)}` : '/products'); }}>
+      <div className={`flex items-center gap-3 rounded-md border bg-white px-4 ${primary ? 'min-h-16 border-[var(--color-blue)]' : 'min-h-[46px] border-[var(--color-input)]'}`}>
+        <FineIcon name="Search" />
+        <input aria-label="제품명 · 모델명 · 용도 검색" role="combobox" aria-autocomplete="list" aria-expanded={visible}
+          aria-controls={visible ? id : undefined} aria-activedescendant={visible && items[active] ? `${id}-${active}` : undefined}
+          className="min-w-0 flex-1 py-2 text-sm outline-none" type="search" value={query}
+          placeholder="제품명 · 모델명 · 용도 검색" onFocus={() => setOpen(true)}
+          onChange={e => { setQuery(e.target.value); setOpen(true); setActive(-1); }}
+          onKeyDown={e => {
+            if (e.key === 'Escape') { setOpen(false); setActive(-1); }
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.preventDefault(); setOpen(true);
+              setActive(previous => e.key === 'ArrowDown' ? Math.min(previous + 1, items.length - 1) : Math.max(previous - 1, -1));
             }
-        };
-
-        fetchResults();
-        return () => controller.abort();
-    }, [debouncedQuery]);
-
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) closeSearch();
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [closeSearch]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) closeSearch();
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, closeSearch]);
-
-    useEffect(() => {
-        if (isOpen) inputRef.current?.focus();
-    }, [isOpen]);
-
-    const handleToggle = () => {
-        if (isOpen) {
-            closeSearch();
-        } else {
-            setIsOpen(true);
-        }
-    };
-
-    const handleSelect = (productId: number) => {
-        closeSearch();
-        router.push(`/products/${productId}`);
-    };
-
-    const showDropdown = isOpen && debouncedQuery.trim().length > 0;
-
-    return (
-        <div ref={containerRef} className="relative flex items-center">
-            {isOpen && (
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="제품 검색..."
-                    className="w-36 md:w-48 px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm
-                               border border-white/15 focus:border-blue-300 focus:ring-1 focus:ring-blue-300
-                               outline-none transition placeholder-gray-400 mr-2"
-                />
-            )}
-
-            <button
-                onClick={handleToggle}
-                className="p-1.5 rounded-lg hover:bg-white/10 transition"
-                aria-label="제품 검색"
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-300 hover:text-white transition"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                </svg>
-            </button>
-
-            {showDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-72 md:w-80 bg-white rounded-xl shadow-lg
-                                border border-gray-200 z-50 overflow-hidden">
-                    {isLoading ? (
-                        <div className="p-4 text-center text-sm text-gray-500">
-                            검색 중...
-                        </div>
-                    ) : searchError ? (
-                        <div className="p-4 text-center text-sm text-red-600" role="alert">
-                            검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
-                        </div>
-                    ) : results.length > 0 ? (
-                        <ul className="max-h-80 overflow-y-auto">
-                            {results.map((product) => (
-                                <li key={product.id}>
-                                    <button
-                                        onClick={() => handleSelect(product.id)}
-                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50
-                                                   transition text-left border-b border-gray-100 last:border-b-0"
-                                    >
-                                        {product.imageUrl ? (
-                                            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-                                                <Image
-                                                    src={product.imageUrl}
-                                                    alt={product.name}
-                                                    width={40}
-                                                    height={40}
-                                                    className="h-full w-full object-contain p-1"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0
-                                                            flex items-center justify-center">
-                                                <svg
-                                                    className="w-5 h-5 text-gray-400"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={1.5}
-                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                                    />
-                                                </svg>
-                                            </div>
-                                        )}
-
-                                        <div className="flex-1 min-w-0">
-                                            <p className="line-clamp-2-safe text-sm font-bold text-gray-800">
-                                                {product.name}
-                                            </p>
-                                            <p className="line-clamp-2-safe text-xs text-gray-500">
-                                                {product.category}
-                                            </p>
-                                        </div>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div className="p-4 text-center text-sm text-gray-500">
-                            검색 결과가 없습니다
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
+          }} />
+        {primary && <button className="button-primary button-inline shrink-0" type="submit">검색하기</button>}
+      </div>
+      {visible && <div className="absolute inset-x-0 top-full z-40 mt-1 rounded-md border border-[var(--color-line)] bg-white p-2 shadow-lg">
+        <ul id={id} role="listbox" className="max-h-72 overflow-auto">
+          {items.map((item, index) => <li role="option" aria-selected={active === index} id={`${id}-${index}`} key={item.id}
+            onMouseDown={e => e.preventDefault()} onClick={() => go(`/products/${item.id}`)}
+            className={`cursor-pointer break-words px-3 py-2 hover:bg-[var(--color-paper)] ${active === index ? 'bg-[var(--color-selected)]' : ''}`}>
+            <strong>{item.name}</strong> <span className="site-muted">{item.category}</span>
+          </li>)}
+        </ul>
+        {(!matches || matches.failed || !items.length) && <p role="status" className="site-muted px-3 py-2">
+          {!matches ? '검색 중…' : matches.failed ? '검색 결과를 모두 불러오지 못했습니다.' : '일치하는 제품이 없습니다.'}
+        </p>}
+      </div>}
+    </form>
+  );
 }

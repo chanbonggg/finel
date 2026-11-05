@@ -43,7 +43,9 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
             select p
             from Product p
             where p.isVisible = true
-              and lower(p.name) like lower(concat('%', :query, '%'))
+              and (lower(p.name) like lower(concat('%', :query, '%'))
+                or lower(coalesce(p.modelName, '')) like lower(concat('%', :query, '%'))
+                or lower(coalesce(p.useCase, '')) like lower(concat('%', :query, '%')))
             order by p.createdAt desc
             """)
     List<Product> searchVisibleProducts(@Param("query") String query, Pageable pageable);

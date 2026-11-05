@@ -13,7 +13,7 @@
 
 ## 패키지 책임
 
-- `InquiryController`: 공개 등록, 관리자 목록, 관리자 삭제의 HTTP 계약을 담당한다.
+- `InquiryController`: 공개 등록, 관리자 목록·읽음·삭제의 HTTP 계약을 담당한다.
 - `InquiryService`: alias 정규화, 검증, 저장과 메일 발송 orchestration, 목록·삭제, DTO 변환을 담당한다.
 - `InquiryPersistenceService`: 문의 저장의 별도 Spring bean이며 commit이 끝나는 트랜잭션 경계를 제공한다.
 - `InquiryRepository`: Inquiry 영속성만 담당한다.
@@ -35,7 +35,7 @@
 
 - `GET /api/inquiries`는 관리자 인증이 필요하며 `createdAt desc`로 반환한다.
 - `DELETE /api/inquiries/{id}`는 관리자 인증과 CSRF가 필요하고 없는 id는 404다.
-- 현재 명세에 읽음 처리나 수정 API는 없다. `isRead` 기능을 임의로 추가하지 않는다.
+- `PATCH /api/inquiries/{id}/read`는 관리자 인증과 CSRF를 요구한다. `isRead=true`만 허용하고 없는 문의는 404다. 상세 열람 시 호출은 화면에서 연결한다.
 - 응답 날짜는 UTC `...Z` ISO-8601 문자열이며 Entity의 `LocalDateTime`을 직접 직렬화하지 않는다.
 
 ## 트랜잭션 경계
