@@ -47,8 +47,7 @@ export default async function Home() {
       <div className="site-container">
         <p className="mb-4 text-xs font-bold tracking-wide text-[var(--color-blue)]">FINEL / PNEUMATIC PARTS</p>
         <h1 className="fine-title">필요한 공압 부품, 검색부터 문의까지.</h1>
-        <div className="mt-3 flex flex-wrap justify-between gap-2"><p className="site-muted">제품명으로 찾거나 제품군을 선택한 뒤, 등록 규격을 비교해보세요.</p><p className="site-muted">검색 → 비교 → 상세 확인 → 문의</p></div>
-        <div className="mt-7"><p className="mb-2 font-bold">제품명 · 모델명 · 용도 검색</p><ProductSearch primary /></div>
+        <div className="mt-3 flex flex-wrap justify-between gap-2"><p className="site-muted">제품명으로 찾거나 제품군을 선택한 뒤, 등록 규격을 비교해보세요.</p></div>
         <div className="mb-3 mt-8 flex justify-between gap-2"><h2 className="font-bold">주요 제품군</h2><Link href="/products" className="fine-link text-sm">전체 제품 보기 →</Link></div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {[...categories].slice(0,5).map(([id, group]) => <Link key={id} href={`/products/category/${id}`} className="fine-panel flex items-center justify-between gap-3 p-4 hover:border-[var(--color-blue)]"><span className="min-w-0 break-words"><strong>{group.name}</strong><span className="site-muted block">{group.count}개</span></span><span aria-hidden>↗</span></Link>)}
