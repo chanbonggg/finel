@@ -15,6 +15,7 @@
 ```text
 POST /api/inquiries
 GET /api/inquiries
+PATCH /api/inquiries/{id}/read
 DELETE /api/inquiries/{id}
 Inquiry Entity/Repository 사용
 MailService 연동
@@ -26,7 +27,6 @@ MailService 연동
 
 ```text
 문의 수정 API
-문의 읽음 처리 API
 스팸 방지 captcha
 첨부파일 문의
 메일 템플릿 에디터
@@ -253,6 +253,10 @@ Response:
   ]
 }
 ```
+
+### PATCH /api/inquiries/{id}/read
+
+관리자와 CSRF 토큰이 필요하다. `{"isRead":true}`를 받아 기존 컬럼을 갱신하고 `200` `{success, message, inquiry}`를 반환한다. 같은 문의에 반복 호출할 수 있다. 누락·`null`·`false`는 `400`, 없는 문의는 `404`다. 상품 미선택 등록은 기존 공개 등록 계약으로 처리한다.
 
 ### DELETE /api/inquiries/{id}
 

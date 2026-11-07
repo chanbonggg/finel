@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 190" role="img" aria-labelledby="title">
+  <title id="title">FineL wordmark</title>
+  <g fill="none" stroke="#141416" stroke-width="15">
+    <path d="M37 151V39h70M37 92h60M395 39v112h67" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M148 90v61M193 151V88m0 18c0-27 59-29 59 3v42M350 113h-59m0 0c0-19 10-29 29-29 20 0 30 13 30 29 0 26-13 39-32 39-12 0-20-5-26-14" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <circle cx="148" cy="55" r="10" fill="#0066CC"/>
+</svg>

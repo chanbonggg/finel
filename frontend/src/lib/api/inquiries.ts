@@ -11,3 +11,9 @@ export async function getInquiries(): Promise<Inquiry[]> {
 export async function deleteInquiry(id: number): Promise<MessageResponse> {
   return readJson<MessageResponse>(await authenticatedFetch(`/api/inquiries/${id}`, { method: 'DELETE' }));
 }
+export async function markInquiryRead(id: number): Promise<Inquiry> {
+  const data = await readJson<MessageResponse & { inquiry: Inquiry }>(await authenticatedFetch(
+    `/api/inquiries/${id}/read`, { method: 'PATCH', body: JSON.stringify({ isRead: true }) },
+  ));
+  return data.inquiry;
+}

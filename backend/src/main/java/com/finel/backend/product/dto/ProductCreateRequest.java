@@ -1,3 +1,6 @@
 package com.finel.backend.product.dto;
 
-public record ProductCreateRequest(String name, String categoryId, String spec, String description, String imageUrl) {}
+import com.fasterxml.jackson.databind.JsonNode;
+
+public record ProductCreateRequest(JsonNode name, String categoryId, String spec, String description, String imageUrl,
+        JsonNode modelName, JsonNode useCase, JsonNode specifications, JsonNode catalogFileId, JsonNode catalogPage) {}

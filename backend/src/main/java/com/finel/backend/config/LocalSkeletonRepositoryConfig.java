@@ -4,6 +4,7 @@ import com.finel.backend.auth.AdminRepository;
 import com.finel.backend.category.CategoryRepository;
 import com.finel.backend.inquiry.InquiryRepository;
 import com.finel.backend.product.ProductRepository;
+import com.finel.backend.catalog.CatalogRepository;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.List;
@@ -19,6 +20,7 @@ public class LocalSkeletonRepositoryConfig {
     @Bean CategoryRepository categoryRepository() { return emptyRepository(CategoryRepository.class); }
     @Bean ProductRepository productRepository() { return emptyRepository(ProductRepository.class); }
     @Bean InquiryRepository inquiryRepository() { return emptyRepository(InquiryRepository.class); }
+    @Bean CatalogRepository catalogRepository() { return emptyRepository(CatalogRepository.class); }
 
     private static <T> T emptyRepository(Class<T> type) {
         Object proxy = Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, (instance, method, args) -> {

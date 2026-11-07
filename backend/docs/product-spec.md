@@ -2,6 +2,8 @@
 
 작성일: 2026-05-30
 
+2026-11-05 확장 계약은 [API 계약 0절](../../docs/api-contract.md#0-상품카탈로그문의-읽음-계약-2026-11-05)을 따른다. 상품 생성은 이름·제품군을 요구하며 `spec`은 선택이다. 공개·관리자 응답은 모델명·용도·상세 규격과 카탈로그 연결을 포함한다. 기존 수정 요청에서 새 필드를 생략하면 저장된 값을 보존한다.
+
 ## 목표
 
 제품 목록, 상세, 검색, 등록, 수정, 삭제 기능을 Spring Boot로 이전한다.
@@ -429,7 +431,7 @@ Request:
 ```text
 name 필수
 categoryId 필수
-spec 필수
+spec 선택
 categoryId는 문자열/숫자 모두 허용 후 Integer 변환
 description, imageUrl은 없으면 빈 문자열
 생성 시 isVisible=true

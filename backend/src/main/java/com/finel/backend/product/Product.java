@@ -18,6 +18,10 @@ import java.time.ZoneOffset;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.util.List;
+import com.finel.backend.product.dto.Specification;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Entity
@@ -39,6 +43,22 @@ public class Product {
 
     @Column(name = "spec", nullable = false)
     private String spec;
+
+    @Column(name = "\"modelName\"", columnDefinition = "TEXT")
+    private String modelName;
+
+    @Column(name = "\"useCase\"", columnDefinition = "TEXT")
+    private String useCase;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "specifications", nullable = false, columnDefinition = "jsonb")
+    private List<Specification> specifications = List.of();
+
+    @Column(name = "\"catalogFileId\"")
+    private Integer catalogFileId;
+
+    @Column(name = "\"catalogPage\"")
+    private Integer catalogPage;
 
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
@@ -64,7 +84,7 @@ public class Product {
         Product product = new Product();
         product.name = name;
         product.category = category;
-        product.spec = spec;
+        product.spec = spec == null ? "" : spec;
         product.description = description == null ? "" : description;
         product.imageUrl = imageUrl == null ? "" : imageUrl;
         product.isVisible = true;
@@ -80,12 +100,21 @@ public class Product {
             Boolean isVisible) {
         this.name = name;
         this.category = category;
-        this.spec = spec;
+        this.spec = spec == null ? "" : spec;
         this.description = description == null ? "" : description;
         this.imageUrl = imageUrl == null ? "" : imageUrl;
         if (isVisible != null) {
             this.isVisible = isVisible;
         }
+    }
+
+    public void updateDetails(String modelName, String useCase, List<Specification> specifications,
+            Integer catalogFileId, Integer catalogPage) {
+        this.modelName = modelName;
+        this.useCase = useCase;
+        this.specifications = List.copyOf(specifications);
+        this.catalogFileId = catalogFileId;
+        this.catalogPage = catalogPage;
     }
 
     @PrePersist

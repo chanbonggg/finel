@@ -27,12 +27,13 @@
 - `categoryId`와 `includeHidden=true` 동시 사용은 400이다.
 - `/api/products/featured`는 visible만 최신순으로 반환하며 limit 기본 4, 최대 12다.
 - `/api/products/{id}`는 선택적 인증을 하지 않는다. 숨김 제품은 cookie 유무와 관계없이 공개 API에서 404다.
-- `/api/products/search`는 trim한 q로 visible name 부분 일치 검색을 수행한다. 빈 q는 빈 배열, 최대 10개다.
+- `/api/products/search`는 trim한 q로 공개 상품의 이름·모델명·용도 부분 일치 검색을 수행한다. 빈 q는 빈 배열, 최대 10개다.
 
 ## 관리자 쓰기 계약
 
 - POST/PATCH/DELETE는 관리자 인증과 CSRF가 필요하다.
-- 생성 요청의 categoryId는 문자열과 숫자 입력을 계약대로 정규화하고, name/categoryId/spec을 필수 검증한다.
+- 생성 요청의 categoryId는 문자열과 숫자 입력을 계약대로 정규화하고, name/categoryId를 필수 검증한다. `spec`은 선택이다.
+- 새 상품 상세 필드와 카탈로그 연결의 값·생략·해제 규칙은 API 계약 0절을 따른다. 상품은 카탈로그 페이지 범위 확인에 `CatalogReader`를 사용한다.
 - 생성 기본값은 `description=""`, `imageUrl=""`, `isVisible=true`다.
 - 수정은 제품과 Category 존재를 확인하고 `isVisible=false`도 정상 반영한다.
 - 삭제 대상 없음은 404이며 현재 계약은 hard delete다. 임의로 soft delete로 바꾸지 않는다.

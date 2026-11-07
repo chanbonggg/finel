@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.AuthenticationException;
@@ -22,6 +23,7 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenResolv
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.InvalidCsrfTokenException;
 import org.springframework.security.web.csrf.MissingCsrfTokenException;
@@ -38,7 +40,16 @@ public class SecurityConfig {
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(c -> c.csrfTokenRepository(csrf).csrfTokenRequestHandler(csrfHandler)
-                    .ignoringRequestMatchers("/api/inquiries"))
+                    .withObjectPostProcessor(new ObjectPostProcessor<CsrfFilter>() {
+                        @Override
+                        public <T extends CsrfFilter> T postProcess(T filter) {
+                            // Resource Server normally exempts bearer requests. Our JWT comes from a cookie.
+                            filter.setRequireCsrfProtectionMatcher(request -> CsrfFilter.DEFAULT_CSRF_MATCHER.matches(request)
+                                    && !("POST".equals(request.getMethod()) && request.getRequestURI()
+                                            .equals(request.getContextPath() + "/api/inquiries")));
+                            return filter;
+                        }
+                    }))
                 .exceptionHandling(errors -> errors
                     .accessDeniedHandler((req,res,e)->{
                         boolean csrfFailure = e instanceof MissingCsrfTokenException || e instanceof InvalidCsrfTokenException;
@@ -57,6 +68,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/auth/csrf","/api/auth/login","/api/auth/logout","/api/sitemap-data").permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/inquiries").permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/products/**","/api/categories/**").permitAll()
+                    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/catalogs/*/file").permitAll()
                     .anyRequest().authenticated())
                 .oauth2ResourceServer(o->o.bearerTokenResolver(cookieResolver()).jwt(Customizer.withDefaults())
                     .authenticationEntryPoint((req,res,e)->{logAuthenticationFailure(req.getMethod(), req.getRequestURI(), e);res.setStatus(401);res.setContentType("application/json");mapper.writeValue(res.getOutputStream(),new ErrorResponse("인증이 필요합니다."));}))
@@ -70,7 +82,7 @@ public class SecurityConfig {
     @Bean BearerTokenResolver cookieResolver(){return request->{
         String method=request.getMethod(), path=request.getRequestURI();
         boolean publicRequest = ("GET".equals(method) && (path.startsWith("/api/products") && !"true".equalsIgnoreCase(request.getParameter("includeHidden"))
-                || path.startsWith("/api/categories") || path.equals("/api/sitemap-data")
+                || path.startsWith("/api/categories") || path.equals("/api/sitemap-data") || path.matches("/api/catalogs/[^/]+/file")
                 || path.equals("/api/auth/csrf") || path.equals("/api/auth/logout")))
                 || ("POST".equals(method) && (path.equals("/api/inquiries") || path.equals("/api/auth/login")));
         if(publicRequest || request.getCookies()==null) return null;

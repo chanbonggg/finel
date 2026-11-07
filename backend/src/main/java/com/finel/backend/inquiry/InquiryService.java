@@ -80,6 +80,18 @@ public class InquiryService {
     }
 
     @Transactional
+    public InquiryResponse markRead(Integer id, Boolean isRead) {
+        if (!Boolean.TRUE.equals(isRead)) {
+            throw new IllegalArgumentException("isRead는 true여야 합니다.");
+        }
+        Inquiry inquiry = repository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("문의를 찾을 수 없습니다."));
+        inquiry.markRead();
+        repository.flush();
+        return response(inquiry);
+    }
+
+    @Transactional
     public void delete(Integer id) {
         Inquiry inquiry = repository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("문의를 찾을 수 없습니다."));

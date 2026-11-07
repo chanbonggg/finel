@@ -1,86 +1,102 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { PARTNERS } from '@/constants/partners';
-import type { Product } from '@/lib/api/products';
-import type { Category } from '@/lib/api/types';
-import ProductCard from '@/features/products/components/ProductCard';
+import ProductPhoto from '@/components/ProductPhoto';
+import { translateSearchQuery } from '@/lib/searchKeywordMap';
+import type { Product } from '@/lib/api/types';
 
-const ITEMS_PER_PAGE = 9;
+const PAGE_SIZE = 10;
+const sortNames = ['latest', 'nameAsc', 'nameDesc'];
+const fold = (value: string) => value.toLocaleLowerCase('ko');
+const number = (value: string | null) => value && /^\d+$/.test(value) && Number.isSafeInteger(+value) && +value > 0 ? +value : 0;
 
 export default function ProductsClient({ initialProducts }: { initialProducts: Product[] }) {
-    const [selectedCompanyId, setSelectedCompanyId] = useState<number | 'all'>('all');
-    const [selectedCategory, setSelectedCategory] = useState('all');
-    const [currentPage, setCurrentPage] = useState(1);
+  const params = useSearchParams();
+  const pathname = usePathname();
+  const read = (key: string) => params.getAll(key).length === 1 ? params.get(key) : null;
+  const q = read('q')?.trim() ?? '';
+  const category = number(read('categoryId'));
+  const company = number(read('companyId'));
+  const sortParam = read('sort');
+  const sort = sortParam && sortNames.includes(sortParam) ? sortParam : 'latest';
+  const products = initialProducts.filter(p => p.isVisible);
+  const companyIds = new Set(products.map(p => p.companyId));
+  if (company) companyIds.add(company);
+  const companies = [...companyIds].sort((a, b) => a - b).map(id => ({
+    id, name: PARTNERS.find(partner => partner.id === id)?.name.toUpperCase() ?? `기업 ${id}`,
+  }));
+  const companyName = companies.find(c => c.id === company)?.name;
+  const companyProducts = products.filter(p => !company || p.companyId === company);
+  const terms = [fold(q), fold(translateSearchQuery(q))].filter(Boolean);
+  const base = companyProducts.filter(p =>
+    (!terms.length || terms.some(term => [p.name, p.modelName, p.useCase].some(field => field && fold(field).includes(term)))),
+  );
+  const counts = new Map<number, number>();
+  for (const product of base) counts.set(product.categoryId, (counts.get(product.categoryId) ?? 0) + 1);
+  const categories = [...new Map(companyProducts.map(p => [p.categoryId, { id: p.categoryId, name: p.category }])).values()];
+  const list = base.filter(p => !category || p.categoryId === category).sort((a,b) =>
+    (sort === 'latest' ? b.createdAt.localeCompare(a.createdAt) : a.name.localeCompare(b.name, 'ko') * (sort === 'nameDesc' ? -1 : 1)) || b.id - a.id);
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const page = Math.min(number(read('page')) || 1, pages);
+  const visible = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const href = (changes: Record<string, string | number | null>) => {
+    const next = new URLSearchParams();
+    for (const [key, value] of Object.entries({ q, companyId: company, categoryId: category, sort: sort === 'latest' ? '' : sort, page: page === 1 ? 0 : page, ...changes })) {
+      if (value) next.set(key, String(value));
+    }
+    return `${pathname}${next.size ? '?' + next : ''}`;
+  };
+  const update = (changes: Record<string, string | number | null>) => window.history.pushState(null, '', href(changes));
 
-    const categories = useMemo<Category[]>(() => Array.from(new Map(initialProducts.map((product) => [product.categoryId, {
-        id: product.categoryId,
-        name: product.category,
-        companyId: product.companyId,
-    }])).values()), [initialProducts]);
-
-    const categoryOptions = useMemo(() => selectedCompanyId === 'all'
-        ? categories
-        : categories.filter((category) => category.companyId === selectedCompanyId), [categories, selectedCompanyId]);
-
-    const filteredProducts = useMemo(() => initialProducts
-        .filter((product) => product.isVisible)
-        .filter((product) => selectedCompanyId === 'all' || product.companyId === selectedCompanyId)
-        .filter((product) => selectedCategory === 'all' || product.category === selectedCategory)
-        .sort((a, b) => b.id - a.id), [initialProducts, selectedCategory, selectedCompanyId]);
-
-    const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-    const displayedProducts = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-    const categoryLinkClass = (categoryName: string) => selectedCategory === categoryName
-        ? 'appearance-none rounded-full border border-[var(--color-black)] bg-[var(--color-black)] px-4 py-2 font-sans text-sm font-black leading-normal text-white'
-        : 'appearance-none rounded-full border border-[var(--color-line)] bg-white px-4 py-2 font-sans text-sm font-black leading-normal text-[var(--color-body)] transition hover:border-[var(--color-blue)]';
-
-    const handleCompanyClick = (id: number) => {
-        setSelectedCompanyId(id);
-        setSelectedCategory('all');
-        setCurrentPage(1);
-    };
-
-    return (
-        <div className="site-section">
-            <div className="site-container">
-                <section className="mb-8">
-                    <p className="site-eyebrow">Products</p>
-                    <h1 className="site-title">공압 부품 제품 목록</h1>
-                    <p className="site-copy mt-4 max-w-3xl">브랜드, 제품군, 모델명 기준으로 필요한 제품을 확인하고 상세 페이지에서 스펙과 상담 정보를 이어볼 수 있습니다.</p>
-                </section>
-
-                <section className="mb-7 grid grid-cols-6 gap-3 max-lg:grid-cols-3 max-sm:grid-cols-2">
-                    {PARTNERS.map((partner) => (
-                        <button key={partner.id} type="button" onClick={() => handleCompanyClick(partner.id)} className={`grid min-h-20 place-items-center rounded-xl border bg-white p-2 transition ${selectedCompanyId === partner.id ? 'border-[var(--color-blue)] bg-[#f7fbff]' : 'border-[var(--color-line)] hover:border-[var(--color-blue)]'}`} title={partner.name}>
-                            <Image src={partner.logo} alt={partner.name} width={150} height={54} unoptimized className="max-h-12 w-[82%] object-contain" />
-                        </button>
-                    ))}
-                </section>
-
-                {selectedCompanyId !== 'all' && (
-                    <section className="mb-8 flex flex-wrap gap-2">
-                        <button type="button" onClick={() => { setSelectedCategory('all'); setCurrentPage(1); }} className={categoryLinkClass('all')}>All</button>
-                        {categoryOptions.map((category) => (
-                            <button key={category.id} type="button" onClick={() => { setSelectedCategory(category.name); setCurrentPage(1); }} className={categoryLinkClass(category.name)}>{category.name}</button>
-                        ))}
-                    </section>
-                )}
-
-                <section className="grid grid-cols-3 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
-                    {displayedProducts.length === 0 && <div className="surface-card col-span-full p-8 text-center text-[var(--color-muted)]">등록된 제품이 아직 없습니다.</div>}
-                    {displayedProducts.map((product) => <ProductCard key={product.id} product={product} />)}
-                </section>
-            </div>
-
-            {totalPages > 1 && (
-                <div className="mt-12 flex items-center justify-center gap-2">
-                    <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} className="button-secondary min-h-10 px-3 disabled:cursor-not-allowed disabled:opacity-30">‹</button>
-                    {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => <button key={page} type="button" onClick={() => setCurrentPage(page)} className={`h-10 w-10 rounded-lg text-sm font-black transition ${currentPage === page ? 'bg-[var(--color-black)] text-white' : 'border border-[var(--color-line)] bg-white text-[var(--color-body)] hover:bg-[var(--color-pale)]'}`}>{page}</button>)}
-                    <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage === totalPages} className="button-secondary min-h-10 px-3 disabled:cursor-not-allowed disabled:opacity-30">›</button>
-                </div>
-            )}
+  return <div className="site-container py-7 pb-12">
+    <p className="site-muted mb-6 text-xs"><Link href="/">홈</Link>　›　제품 목록</p>
+    <h1 className="fine-title">{companyName ? `${companyName} 제품 목록` : '제품 목록'}</h1>
+    <p className="site-muted mt-3">기업과 제품군을 선택해 필요한 제품을 찾아보세요.</p>
+    <div className="mt-8 grid items-start gap-8 lg:grid-cols-[224px_minmax(0,1fr)]">
+      <aside aria-label="제품 필터" className="min-w-0 space-y-5">
+        <label className="grid gap-2 font-bold">기업
+          <select className="fine-input text-sm font-normal" value={company}
+            onChange={e => update({ companyId: Number(e.target.value), categoryId: null, page: null })}>
+            <option value={0}>전체 기업</option>
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </label>
+        <div>
+          <h2 className="mb-2 font-bold">제품 카테고리</h2>
+          <nav className="flex flex-wrap gap-1 lg:grid" aria-label="카테고리 필터">
+            <Link aria-current={!category ? 'page' : undefined} className={`flex justify-between gap-3 rounded px-3 py-2 text-sm ${!category ? 'bg-[var(--color-selected)] font-bold text-[var(--color-blue)]' : ''}`} href={href({ categoryId: null, page: null })} scroll={false}>전체 제품 <span>{base.length}</span></Link>
+            {categories.map(c => <Link key={c.id} scroll={false} aria-current={category === c.id ? 'page' : undefined} href={href({ categoryId: c.id, page: null })} className={`flex justify-between gap-3 rounded px-3 py-2 text-sm ${category === c.id ? 'bg-[var(--color-selected)] font-bold text-[var(--color-blue)]' : ''}`}>{c.name} <span>{counts.get(c.id) ?? 0}</span></Link>)}
+          </nav>
         </div>
-    );
+      </aside>
+      <section className="min-w-0 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div><h2 className="text-xl font-bold">제품 {list.length}개</h2>
+            <p className="site-muted mt-1">{q ? `검색어: ${q}` : '검색어 없음'} {q && <Link className="fine-link" href={href({ q: null, page: null })} scroll={false}>지우기</Link>} · {categories.find(c => c.id === category)?.name ?? '전체 카테고리'}</p></div>
+          <select aria-label="제품 정렬" className="fine-input max-w-36" value={sort} onChange={e => update({ sort: e.target.value === 'latest' ? null : e.target.value, page: null })}>
+            <option value="latest">최신순</option><option value="nameAsc">제품명 오름차순</option><option value="nameDesc">제품명 내림차순</option>
+          </select>
+        </div>
+        {visible.length ? <div className="fine-panel overflow-x-auto" tabIndex={0} role="region" aria-label="제품 표">
+          <table className="fine-table min-w-[700px] table-fixed">
+            <colgroup>{['15%', '21%', '16%', '17%', '16%', '15%'].map((width, index) => <col key={index} style={{ width }} />)}</colgroup>
+            <thead><tr>{['이미지','제품명','제품군','등록 규격','모델명','상세 정보'].map(title => <th scope="col" key={title}>{title}</th>)}</tr></thead>
+            <tbody>{visible.map(product => <tr key={product.id}>
+              <td><ProductPhoto url={product.imageUrl} name={product.name} className="h-14 w-18" /></td>
+              <th scope="row" className="font-bold">{product.name}</th><td>{product.category}</td><td>{product.spec || '미등록'}</td><td><span className="line-clamp-2-safe" title={product.modelName ?? undefined}>{product.modelName || '미등록'}</span></td>
+              <td><Link className="fine-link" href={`/products/${product.id}`}>상세 보기 →</Link></td>
+            </tr>)}</tbody>
+          </table>
+        </div> : <p className="fine-panel p-8 text-center" role="status">조건에 맞는 제품이 없습니다.</p>}
+        {pages > 1 && <nav className="flex flex-wrap items-center justify-center gap-3 text-sm" aria-label="제품 페이지">
+          {page > 1 && <Link href={href({ page: page - 1 })} scroll={false}>‹ 이전</Link>}
+          <span aria-current="page" className="rounded bg-[var(--color-blue)] px-3 py-1 text-white">{page}</span>
+          {page < pages && <Link href={href({ page: page + 1 })} scroll={false}>다음 ›</Link>}
+          <span className="site-muted">{page} / {pages} 페이지</span>
+        </nav>}
+      </section>
+    </div>
+  </div>;
 }

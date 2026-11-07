@@ -69,7 +69,15 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  return fetch(joinApiUrl(getApiBaseUrl(), path), { ...init, headers, credentials: 'include' });
+  return fetch(apiUrl(path), { ...init, headers, credentials: 'include' });
+}
+
+export function apiUrl(path: string): string {
+  return joinApiUrl(getApiBaseUrl(), path);
+}
+
+export function publicApiUrl(path: string): string {
+  return joinApiUrl(browserApiBaseUrl.replace(/\/+$/, '') || '/api', path);
 }
 
 export async function readJson<T>(response: Response): Promise<T> {

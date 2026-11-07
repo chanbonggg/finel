@@ -9,6 +9,7 @@ services:
     depends_on: {}
     environment:
       SPRING_PROFILES_ACTIVE: db
+      CATALOG_STORAGE_ROOT: /var/lib/finel/catalogs
       # A smoke test must not baseline or migrate the existing Neon database.
       SPRING_FLYWAY_ENABLED: "false"
       DB_URL: ${DB_URL:?DB_URL must be set to the Neon JDBC URL}
@@ -31,6 +32,8 @@ services:
       CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-finel/products}
       NEXT_REVALIDATE_URL: http://finel-frontend:3000/internal/revalidate
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:?REVALIDATE_SECRET must be set}
+    volumes:
+      - finel-neon-catalog-data:/var/lib/finel/catalogs
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
       interval: 10s
@@ -80,3 +83,6 @@ services:
 networks:
   finel-neon-smoke:
     driver: bridge
+
+volumes:
+  finel-neon-catalog-data:

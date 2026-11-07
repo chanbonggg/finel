@@ -67,6 +67,10 @@ public class Inquiry {
         return inquiry;
     }
 
+    public void markRead() {
+        this.isRead = true;
+    }
+
     @PrePersist
     void prePersist() {
         if (createdAt == null) {
