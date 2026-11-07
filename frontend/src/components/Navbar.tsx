@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import ProductSearch from '@/features/products/components/ProductSearch';
-import FineIcon from './FineIcon';
 import CategoryMenu from './CategoryMenu';
 import type { Category } from '@/lib/api/types';
 
@@ -22,7 +21,7 @@ export default function Navbar({ categories }: { categories: Category[] }) {
       <nav aria-label="제품 메뉴" className="border-b border-[var(--color-line)]">
         <div className="site-container flex min-h-[49px] items-center gap-5">
           <CategoryMenu categories={categories} />
-          <Link className="ml-auto flex shrink-0 items-center gap-2 font-bold" href="/products"><FineIcon name="Columns2" />제품 목록 · 비교</Link>
+          <Link className="ml-auto flex shrink-0 items-center gap-2 font-bold" href="/products">제품 목록</Link>
         </div>
       </nav>
     </header>

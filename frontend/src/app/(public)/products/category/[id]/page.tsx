@@ -155,7 +155,7 @@ export default async function CategoryPage({ params }: PageProps) {
                 <p className="site-copy mt-4">
                     {SEO.siteNameKo}의 {category.name} 제품 라인업입니다.
                 </p>
-                <Link className="fine-link mt-4 inline-block text-sm" href={`/products?categoryId=${category.id}`}>이 제품군 목록 · 비교 →</Link>
+                <Link className="fine-link mt-4 inline-block text-sm" href={`/products?categoryId=${category.id}`}>이 제품군 목록 보기 →</Link>
             </section>
 
             <section className="grid grid-cols-3 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">

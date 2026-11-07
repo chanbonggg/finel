@@ -32,7 +32,6 @@ export const metadata: Metadata = {
 import FineIcon from '@/components/FineIcon';
 import ProductPhoto from '@/components/ProductPhoto';
 import PartnerLogos from '@/components/PartnerLogos';
-import ProductSearch from '@/features/products/components/ProductSearch';
 
 export default async function Home() {
   const [featured, catalog] = await Promise.allSettled([getFeaturedProducts(3), getProducts()]);
@@ -47,7 +46,7 @@ export default async function Home() {
       <div className="site-container">
         <p className="mb-4 text-xs font-bold tracking-wide text-[var(--color-blue)]">FINEL / PNEUMATIC PARTS</p>
         <h1 className="fine-title">필요한 공압 부품, 검색부터 문의까지.</h1>
-        <div className="mt-3 flex flex-wrap justify-between gap-2"><p className="site-muted">제품명으로 찾거나 제품군을 선택한 뒤, 등록 규격을 비교해보세요.</p></div>
+        <p className="site-muted mt-3">제품명이나 제품군으로 필요한 제품을 찾아보세요.</p>
         <div className="mb-3 mt-8 flex justify-between gap-2"><h2 className="font-bold">주요 제품군</h2><Link href="/products" className="fine-link text-sm">전체 제품 보기 →</Link></div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {[...categories].slice(0,5).map(([id, group]) => <Link key={id} href={`/products/category/${id}`} className="fine-panel flex items-center justify-between gap-3 p-4 hover:border-[var(--color-blue)]"><span className="min-w-0 break-words"><strong>{group.name}</strong><span className="site-muted block">{group.count}개</span></span><span aria-hidden>↗</span></Link>)}
@@ -56,7 +55,7 @@ export default async function Home() {
       </div>
     </section>
     <section className="site-container py-12">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-bold">등록 제품 살펴보기</h2><p className="site-muted mt-2">필요한 제품의 상세로 이동하세요.</p></div><Link className="button-secondary gap-2" href="/products">제품 목록 · 비교 <FineIcon name="ArrowRightDark" /></Link></div>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-bold">등록 제품 살펴보기</h2><p className="site-muted mt-2">필요한 제품의 상세로 이동하세요.</p></div><Link className="button-secondary gap-2" href="/products">제품 목록 <FineIcon name="ArrowRightDark" /></Link></div>
       {products.length ? <div className="grid gap-5 sm:grid-cols-3">
         {products.map(p => <Link href={`/products/${p.id}`} key={p.id} className="fine-panel overflow-hidden hover:border-[var(--color-blue)]">
           <ProductPhoto url={p.imageUrl} name={p.name} icon="ImageLarge" sizes="(min-width: 640px) 33vw, 100vw" className="h-36 rounded-none" />
